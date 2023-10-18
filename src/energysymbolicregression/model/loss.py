@@ -1,5 +1,5 @@
-from typing import Callable, Tuple, Union
 import numpy as np
+from typing import Callable, Tuple, Union
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
@@ -62,21 +62,35 @@ class EvalLoss:
 
 
     @staticmethod
-    def squash(l, max_loss=100, max_loss_in=400, curve=1.4):
-        # https://www.desmos.com/calculator/se1robxbad
+    def scaled_log(x, d1=0, d2=1, r1=0, r2=1, c=1.4):
+        """
+        Scaled and shifted log function based on given parameters.
 
-        y = max_loss * (abs(l)**curve) / (max_loss_in**curve)
+        x: Input value or array
+        d1, d2: Domain range where d1 is the starting point and d2 is the ending point.
+        r1, r2: Range where r1 is the starting point and r2 is the ending point.
+        c: Curving constant.
 
-        #y = max_loss * (l)**2 / max_loss_in**2
+        Returns the scaled and shifted sigmoid value.
+        
+        https://www.desmos.com/calculator/grlhshtjwt
+        """
 
-        return -1*min(max_loss, y)
+        if x - d1 < 0: #avoid complex numbers from negnum^fraction_curve_value
+            return r1
+        
+        y = r1 + (r2 - r1) * ((x - d1) ** c) / ((d2 - d1) ** c)
+        
+        y = min(y, r2)
+
+        y = max(y, r1)
+        
+        return y
 
     
     @staticmethod
     def scaled_sigmoid(x, d1=-1, d2=1, r1=-1, r2=1, c=0.125):
         """
-        https://www.desmos.com/calculator/myfpzmcc1k
-
         Scaled and shifted sigmoid function based on given parameters.
 
         x: Input value or array
@@ -85,7 +99,10 @@ class EvalLoss:
         c: Curving constant.
 
         Returns the scaled and shifted sigmoid value.
+
+        https://www.desmos.com/calculator/aytcvkhafv
         """
+
         sigmoid_value = 1 / (1 + np.exp((-x + (d1 + (d2 - d1) / 2)) / (c * (d2 - d1))))
         return (r2 - r1) * sigmoid_value + r1
 
@@ -97,20 +114,19 @@ class EvalLoss:
 
         c_ts = self._pf(V, token_string)
 
-        if E > self.min_E:
+        if self.min_E is not None and E > self.min_E:
             #return 0 if energy is too high (give model time to output evaluable expressions, etc)
             return np.zeros(V.shape)
 
         ys = self.evaluator(c_ts)
         if ys is None:
-            return -1*np.ones(V.shape)*self.eval_clip
+            #no longer punish lack of evaluation, instead give model more time to converge using Qfuncts into evaluable output
+            return np.zeros(V.shape)#-1*np.ones(V.shape)*self.eval_clip 
         y_o, y_t = ys
 
         metric_loss_value = -1 * self.metric(ys[0], ys[1])
 
         #print(f"r: {metric_loss_value}")
-
-        y_s = self.squash(metric_loss_value,max_loss=1, max_loss_in=self.eval_clip, curve=self.eval_fit_curve)
 
         #print(f"y_s: {y_s}") #y_s: -1
 
@@ -191,7 +207,22 @@ class EvalLoss:
         #print("unsquashed loss matrix: ")
         #print(unsquashed_loss_matrix.reshape((self.max_str_len, self.num_syms)))
 
-        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence,d2=max_sum_abs_influence,r1=-1,r2=1)
+        #Q@V scaler; scale depending on values in Q@V
+        qv = Q@V
+        qv_max = np.max(qv)
+        qv_min = np.min(qv)
+        qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
+
+
+        ld1=0
+        ld2=self.eval_clip
+        lr1=0 # max((qv_max)*-1, 0) - 3
+        lr2=10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+        lc=self.eval_fit_curve
+
+        y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
+
+        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence, d2=max_sum_abs_influence, r1=-1, r2=1, c=0.125)
 
         #print("squashed loss matrix:")
         #print(loss_matrix_base.reshape((self.max_str_len, self.num_syms)))
@@ -201,8 +232,7 @@ class EvalLoss:
         #print("eval_applied loss matrix:")
         #print(loss_matrix.reshape((self.max_str_len, self.num_syms)))
 
-
-
+        
         return loss_matrix
 
 

@@ -242,7 +242,16 @@ class H_SymReg:
         anim = FuncAnimation(fig, animate, frames=len(c_V_hist), interval=40, repeat=False)
 
         from IPython.display import HTML
-        return HTML(anim.to_html5_video())
+        v = anim.to_html5_video()
+
+        try:
+            # saving to m4 using ffmpeg writer 
+            writervideo = anim.FFMpegWriter(fps=60) 
+            anim.save('outvid.mp4', writer=writervideo) 
+            plt.close() 
+        except Exception as e:
+            print(f"error saving video: {e}")
+        return HTML(v)
 
 
     def decode_output(self, V: np.ndarray = None, clean: bool = True):
