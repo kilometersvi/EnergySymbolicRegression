@@ -10,6 +10,25 @@ By leveraging the energy dynamics inherent to Hopfield networks, the model ident
 
 A significant aspect of this project is the development of a programming language specifically designed for these EBMs. This language aims to introduce fine control over the syntax of output token strings, offering a nuanced approach to symbolic regression tasks. 
 
+## How it works
+
+At the heart of our model is the classic Hopfield network update rule. However, we've introduced a significant change to incorporate the evaluation loss, allowing the model to prioritize solution convergence based on this loss.
+
+The original Hopfield update formula is given by:
+
+$$\frac{du}{dt} u_k = -u_k + V^T @ Q + I $$
+
+In this equation:
+- \( \frac{du}{dt} \) represents the change in activation over time.
+- \( u_k \) is the current activation of neuron k.
+- \( V \) is the vector of current neuron activations.
+- \( Q \) is the weight matrix representing the interactions between neurons.
+- \( I \) is the bias term, traditionally a constant for all neurons.
+
+Our modification involves replacing \( I \) with a loss matrix, which we compute based on how well the current state of the network solves the desired task. This loss matrix takes on the role of the bias, where higher loss values indicate stronger biases for certain neurons. Essentially, the loss steers the network towards states that better satisfy our goals.
+
+By treating the output loss as the bias for the current epoch of solution convergence, we can guide the network's dynamics towards producing more accurate and relevant solutions. 
+
 Todo:
 - Finish optimizer
 - Abstract above QFunctions for more generalizable programming language
