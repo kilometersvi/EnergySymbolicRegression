@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 from typing import Callable, List, Dict
-from typing import Optional, Callable, List, Dict, Tuple, Union
+from typing import Callable, List, Dict, Union
 from matplotlib.animation import FuncAnimation
-from factories import QFactory, IFactory
-from optimizer import *
-from loss import *
-from onehotencode import OneHotEncoder
+from model.factories import QFactory, IFactory
+from model.optimizer import *
+from model.loss import *
+from model.onehotencode import OneHotEncoder
 
 
 
@@ -55,8 +54,8 @@ class H_SymReg:
 
         self.qfactory = QFactory(self.max_str_len, self.chars, self.conf, self.sets)
         if Qfuncts is None or len(Qfuncts) == 0:
-            raise Warning("Qfuncts not defined- do you really want to train on empty connectivity matrix?")
             self.Qfuncts = []
+            raise Warning("Qfuncts not defined- do you really want to train on empty connectivity matrix?")
         else:
             self.Qfuncts = Qfuncts
             for qfunc in self.Qfuncts:
@@ -141,18 +140,14 @@ class H_SymReg:
             if self.optimizer is not None:
                 L = self.optimizer.process(L, self. V)
 
+            self.L_hist.append(L)
 
-            new_I = L#/self.dt# + I
-
-            self.L_hist.append(new_I)
-
-
-            du = -self.u + self.Q @ self.V + new_I
-            self.u += du * self.dt# + L# + new_I
+            du = -self.u + self.Q @ self.V + I + L
+            self.u += du * self.dt
             self.V = self.squasher(self.u, self.gain)
 
             # energy calc
-            E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, new_I))[0][0]
+            E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
             self.E_hist.append(E)
@@ -177,6 +172,7 @@ class H_SymReg:
 
                 if e%(n_iters//100)==0:
                     print(f'{e}: {self.decode_output(self.V, clean=False)}')
+
 
     def plot_results(self):
         V_reshaped = self.V.reshape(self.max_str_len, self.num_syms)

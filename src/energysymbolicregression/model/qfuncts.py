@@ -1,4 +1,4 @@
-from factories import QFactory, IFactory
+from model.factories import QFactory, IFactory
 from typing import List
 
     ## char-position rules
