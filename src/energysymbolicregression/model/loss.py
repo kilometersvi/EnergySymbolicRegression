@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union
+from numpy.linalg import eigvals
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
@@ -9,7 +10,7 @@ class EvaluatorBase:
         # some function on tokenstring, eg eval()
         # return Tuple(y_evaluated, y_true)
         # return None to indicate failure to evaluate
-        return None
+        return None, 0
 
     def __call__(self, s):
         return self.forward(s)
@@ -56,9 +57,18 @@ class EvalLoss:
 
         self._pf = lambda s: s
 
+        self.max_eigenval = 0 
+        self.Q = np.zeros((self.max_str_len*self.num_syms, self.max_str_len*self.num_syms))
+
 
     def set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
         self._pf = f
+
+    def _set_Q(self, Q):
+        if np.mean(np.abs(self, Q - self.Q)) > 0.1:
+            print("new Q")
+            self.Q = Q
+            self.max_eigenval = np.max(np.abs(eigvals(Q)))
 
 
     @staticmethod
@@ -109,27 +119,28 @@ class EvalLoss:
 
     def forward(self, token_string: str, Q: np.ndarray, u: np.ndarray, V: np.ndarray, E: float) -> np.ndarray:
 
+        self._set_Q(Q)
 
         #---- evaluate V to get eval loss from evaluator
 
         c_ts = self._pf(V, token_string)
 
+        """
+        y_o, y_t = self.evaluator(c_ts)
+        if y_o is None:
+            y_o = self.eval_clip 
+
+        metric_loss_value = -1 * self.metric(y_o, y_t)
+        """
         if self.min_E is not None and E > self.min_E:
             #return 0 if energy is too high (give model time to output evaluable expressions, etc)
             return np.zeros(V.shape)
 
-        ys = self.evaluator(c_ts)
-        if ys is None:
+        y_o, y_t = self.evaluator(c_ts)
+        if y_o is None:
             #no longer punish lack of evaluation, instead give model more time to converge using Qfuncts into evaluable output
             return np.zeros(V.shape)#-1*np.ones(V.shape)*self.eval_clip 
-        y_o, y_t = ys
-
-        metric_loss_value = -1 * self.metric(ys[0], ys[1])
-
-        #print(f"r: {metric_loss_value}")
-
-        #print(f"y_s: {y_s}") #y_s: -1
-
+        metric_loss_value = -1 * self.metric(y_o, y_t)
 
         #----- get most active neurons mask matrix
 
@@ -142,9 +153,7 @@ class EvalLoss:
         most_active_neurons_mask_reshaped[row_indices, col_indices] = 1
         most_active_neurons_mask = most_active_neurons_mask_reshaped.reshape((self.max_str_len * self.num_syms, 1))
 
-        #print("most_active_neurons_mask: ")
-        #print(most_active_neurons_mask.reshape((self.max_str_len, self.num_syms)))
-
+        
         #----- get total influence on each of the most activated neurons, to create a normalizer
 
 
@@ -209,16 +218,19 @@ class EvalLoss:
 
         #Q@V scaler; scale depending on values in Q@V
         qv = Q@V
-        qv_max = np.max(qv)
-        qv_min = np.min(qv)
         qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
 
+        diff = np.mean(u[u > 0]) - np.mean(u[u < 0])
+        normalized_diff = diff / self.max_eigenval
 
         ld1=0
         ld2=self.eval_clip
-        lr1=0 # max((qv_max)*-1, 0) - 3
+        lr1=0
         lr2=10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
         lc=self.eval_fit_curve
+
+        print(f"normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, lr2: {lr2}")
+
 
         y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
 
