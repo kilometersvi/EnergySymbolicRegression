@@ -4,7 +4,7 @@ from numpy.linalg import eigvals
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
-
+   
 class EvaluatorBase:
     def forward(self, tokenstring: str) -> Tuple[float, float]:
         # some function on tokenstring, eg eval()
@@ -130,7 +130,7 @@ class EvalLoss:
             y_o = self.eval_clip 
 
         metric_loss_value = -1 * self.metric(y_o, y_t)
-        """
+        """ 
         if self.min_E is not None and E > self.min_E:
             #return 0 if energy is too high (give model time to output evaluable expressions, etc)
             return np.zeros(V.shape)
@@ -214,22 +214,32 @@ class EvalLoss:
 
         #print("unsquashed loss matrix: ")
         #print(unsquashed_loss_matrix.reshape((self.max_str_len, self.num_syms)))
+        
+        #----- scale eval loss based on Q density, current convergence state, and influence of Q@V on normal model learning
 
         #Q@V scaler; scale depending on values in Q@V
         qv = Q@V
+
+        #nonzero = depends on current state, as well as density of Q
         qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
 
+        #use diff value of activated u vs inactive u to determine model convergence state (greater value = more converged = loss should be more influential)
         diff = np.mean(u[u > 0.5]) - np.mean(u[u < 0.5])
-        normalized_diff = diff / self.max_eigenval
 
-        ld1=0
-        ld2=self.eval_clip
-        lr1=0
-        lr2=normalized_diff * abs(qv_nonzero_mean) / 100# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+        #normalize between 0 and 1 using max eigenvalue properties
+        normalized_diff = diff / (self.max_eigenval / 100)
+
+        #max domain of input specified by user based on evaluator 
+        ld2 = self.eval_clip
+
+        # abs(qv_nonzero_mean) represents middle point of proposed model changes by Q matrix; scale max y to be at most this
+        lr2 = normalized_diff * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+
+        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {lr2}")
+        
         lc=self.eval_fit_curve
-
-        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {normalized_diff * abs(qv_nonzero_mean) / 100}")
-
+        ld1 = 0
+        lr1 = 0
 
         y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
 
