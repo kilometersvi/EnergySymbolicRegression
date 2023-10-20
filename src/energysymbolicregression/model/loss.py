@@ -58,7 +58,7 @@ class EvalLoss:
         self._pf = lambda s: s
 
         self.max_eigenval = 0 
-        self.Q = np.zeros((self.max_str_len*self.num_syms, self.max_str_len*self.num_syms))
+        self.Q = np.zeros((self.max_str_len*self.num_syms, self.max_str_len*self.num_syms)).astype(float)
 
 
     def set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
