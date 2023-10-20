@@ -66,7 +66,6 @@ class EvalLoss:
 
     def _set_Q(self, Q):
         if np.mean(np.abs(Q - self.Q, casting="unsafe")) > 0.1:
-            print("new Q")
             self.Q = Q
             self.max_eigenval = np.max(np.abs(eigvals(Q)))
 
@@ -229,7 +228,7 @@ class EvalLoss:
         lr2=10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
         lc=self.eval_fit_curve
 
-        print(f"normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, lr2: {lr2}")
+        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, lr2: {lr2}, new lr2: {normalized_diff * abs(qv_nonzero_mean)}")
 
 
         y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
