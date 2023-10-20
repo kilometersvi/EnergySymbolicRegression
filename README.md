@@ -1,6 +1,6 @@
 # Symbolic Regression with Hebbian Learning
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kilometersvi/EnergySymbolicRegression/blob/main/src/energysymbolicregression/notebooks/math.ipynb#scrollTo=2cynBIWM1emn)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kilometersvi/EnergySymbolicRegression/blob/main/src/energysymbolicregression/notebooks/math.ipynbxs)
 
 This research project explores the integration of symbolic regression into energy-based models (EBMs) using Hopfield networks. 
 
@@ -35,6 +35,7 @@ By treating the output loss as the bias for the current epoch of solution conver
 Learn more about hopfield networks: 
 - https://www.youtube.com/watch?v=HoWJzeAT9uc
 - https://arxiv.org/abs/2008.02217
+
 
 Todo:
 - Finish optimizer
