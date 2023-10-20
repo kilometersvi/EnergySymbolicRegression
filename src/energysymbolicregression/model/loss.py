@@ -65,7 +65,7 @@ class EvalLoss:
         self._pf = f
 
     def _set_Q(self, Q):
-        if np.mean(np.abs(self, Q - self.Q, casting="unsafe")) > 0.1:
+        if np.mean(np.abs(Q - self.Q, casting="unsafe")) > 0.1:
             print("new Q")
             self.Q = Q
             self.max_eigenval = np.max(np.abs(eigvals(Q)))
