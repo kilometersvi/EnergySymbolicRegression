@@ -220,7 +220,7 @@ class EvalLoss:
         qv = Q@V
         qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
 
-        diff = np.mean(u[u > 0]) - np.mean(u[u < 0])
+        diff = np.mean(u[u > 0.5]) - np.mean(u[u < 0.5])
         normalized_diff = diff / self.max_eigenval
 
         ld1=0
