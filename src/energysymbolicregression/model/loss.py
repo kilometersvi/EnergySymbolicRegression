@@ -124,7 +124,7 @@ class EvalLoss:
 
         c_ts = self._pf(V, token_string)
 
-        """
+        
         y_o, y_t = self.evaluator(c_ts)
         if y_o is None:
             y_o = self.eval_clip 
@@ -140,7 +140,7 @@ class EvalLoss:
             #no longer punish lack of evaluation, instead give model more time to converge using Qfuncts into evaluable output
             return np.zeros(V.shape)#-1*np.ones(V.shape)*self.eval_clip 
         metric_loss_value = -1 * self.metric(y_o, y_t)
-
+        """
         #----- get most active neurons mask matrix
 
         V_reshaped = V.reshape(self.max_str_len, self.num_syms)
@@ -225,10 +225,10 @@ class EvalLoss:
         ld1=0
         ld2=self.eval_clip
         lr1=0
-        lr2=10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+        lr2=normalized_diff * abs(qv_nonzero_mean) / 100# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
         lc=self.eval_fit_curve
 
-        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, lr2: {lr2}, new lr2: {normalized_diff * abs(qv_nonzero_mean)}")
+        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {normalized_diff * abs(qv_nonzero_mean) / 100}")
 
 
         y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
