@@ -224,7 +224,9 @@ class EvalLoss:
         qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
 
         #use diff value of activated u vs inactive u to determine model convergence state (greater value = more converged = loss should be more influential)
-        diff = np.mean(u[u > 0.5]) - np.mean(u[u < 0.5])
+        mean_activations_u = np.mean(u[u > 0.5]) if len(u[u > 0.5]) > 0 else 0
+        mean_nonactivations_u = np.mean(u[u < 0.5]) if len(u[u < 0.5]) > 0 else 0
+        diff = abs(mean_activations_u - mean_nonactivations_u)
 
         #normalize between 0 and 1 using max eigenvalue properties
         normalized_diff = diff / (self.max_eigenval / 100)
