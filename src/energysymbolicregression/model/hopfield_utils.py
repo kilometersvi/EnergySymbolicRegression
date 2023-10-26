@@ -71,7 +71,8 @@ def get_diff_of_centers(u):
 
 
 def calc_internal_energy(Q, V):
-    return (-0.5 * np.dot(V.T, np.dot(Q, V)))[0][0]
+    e = (-0.5 * np.dot(V.T, np.dot(Q, V)))
+    return e[0][0]
 
 
 if __name__ == "__main__":

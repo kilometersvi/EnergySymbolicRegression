@@ -102,6 +102,7 @@ class H_SymReg:
                            closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
 
         print(f"binary V_max: {self.V_extremes[1]}")
+        print(f"Q.shape: {self.Q.shape}")
         max_E = calc_internal_energy(self.Q, closest_possible_V_max)
         min_E = calc_internal_energy(self.Q, closest_possible_V_min)
 
