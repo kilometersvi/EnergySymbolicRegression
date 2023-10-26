@@ -190,7 +190,7 @@ class H_SymReg:
             if len(self.E_hist) > 1:
                 dE = self.E_hist[-1] - self.E_hist[-2]
 
-                if np.abs(dE) < min_dE:
+                if abs(dE) > min_dE:
                     lastBigJump = e
                 min_found_E = min(min_found_E, E)
 
