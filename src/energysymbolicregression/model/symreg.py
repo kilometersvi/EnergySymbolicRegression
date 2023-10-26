@@ -93,44 +93,15 @@ class H_SymReg:
         # k = number of active neurons; in this implementation of hopfield, we already know what this is: the number of output positions
         #k = self.max_str_len
 
-        optimal_k = 0
-        min_energy = 99999
-        self.max_k_e_hist = []
-        for k in range(1, V_max.shape[0]):
-            V_k = closest_binary_eigenvector(V_max, k)
-            E_k = calc_internal_energy(self.Q, V_k)
-            self.max_k_e_hist.append(E_k)
-            
-            if E_k < min_energy:
-                min_energy = E_k
-                optimal_k = k
-                optimal_V = V_k
+        #closest_possible_V_max = closest_binary_eigenvector(V_max, k)
+        #closest_possible_V_min = closest_binary_eigenvector(V_min, k)
+
+        #self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
+        #                   closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
+
+        self.V_extremes = (V_min.reshape((self.max_str_len*self.num_syms, 1)),
+                           V_max.reshape((self.max_str_len*self.num_syms, 1)))
         
-        print(optimal_k)
-        k_max = optimal_k
-
-        optimal_k = 0
-        min_energy = 99999
-        self.min_k_e_hist = []
-        for k in range(1, V_min.shape[0]):
-            V_k = closest_binary_eigenvector(V_min, k)
-            E_k = calc_internal_energy(self.Q, V_k)
-            self.min_k_e_hist.append(E_k)
-            
-            if E_k < min_energy:
-                min_energy = E_k
-                optimal_k = k
-                optimal_V = V_k
-        
-        print(optimal_k)        
-        k_min = optimal_k
-
-        closest_possible_V_max = closest_binary_eigenvector(V_max, k_max)
-        closest_possible_V_min = closest_binary_eigenvector(V_min, k_min)
-
-        self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
-                           closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
-
         max_E = calc_internal_energy(self.Q, self.V_extremes[1])[0][0]
         min_E = calc_internal_energy(self.Q, self.V_extremes[0])[0][0]
 
