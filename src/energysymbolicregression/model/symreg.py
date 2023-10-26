@@ -99,8 +99,10 @@ class H_SymReg:
         self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
                            closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
 
-        max_E = calc_internal_energy(self.Q, closest_possible_V_max)
-        min_E = calc_internal_energy(self.Q, closest_possible_V_min)
+        print(f"(max&min) V shape: {self.V_extremes[0].shape}, Q shape: {self.Q.shape}")
+
+        max_E = calc_internal_energy(self.Q, self.V_extremes[1])
+        min_E = calc_internal_energy(self.Q, self.V_extremes[0])
 
         self.energy_domain = (min_E, max_E)
 
@@ -176,7 +178,8 @@ class H_SymReg:
             e2 = np.dot(self.V.T, I+L)
 
             print(f"internal energy: {e1}, external energy: {e2}")
-
+            if e == 0:
+                print(f"V shape: {self.V.shape}, Q shape: {self.Q.shape}, I shape: {I.shape}, L shape: {L.shape}")
             E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
@@ -246,8 +249,8 @@ class H_SymReg:
         global_max_u = max(matrix.max() for matrix in c_u_hist)
         global_min_L = min(matrix.min() for matrix in c_L_hist)
         global_max_L = max(matrix.max() for matrix in c_L_hist)
-        global_min_QV = min(matrix.min() for matrix in c_QV_hist)
-        global_max_QV = max(matrix.max() for matrix in c_QV_hist)
+        global_min_QV = min(matrix.min() for matrix in c_QV_hist[5:])
+        global_max_QV = max(matrix.max() for matrix in c_QV_hist[5:])
 
         im_V = axes[0, 0].imshow(c_V_hist[0], cmap='viridis', vmin=global_min_V, vmax=global_max_V)
         im_u = axes[0, 1].imshow(c_u_hist[0], cmap='viridis', vmin=global_min_u, vmax=global_max_u)
