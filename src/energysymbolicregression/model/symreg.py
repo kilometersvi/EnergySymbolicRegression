@@ -224,7 +224,7 @@ class H_SymReg:
 
     def plot_histories_as_video(self):
 
-        fig, axes = plt.subplots(2, 3, figsize=(16, 12))
+        fig, axes = plt.subplots(2, 3, figsize=(10, 6))
 
         axes[0, 1].set_title('V')
         axes[0, 0].set_title('u')
