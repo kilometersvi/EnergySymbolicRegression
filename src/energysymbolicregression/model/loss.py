@@ -69,7 +69,7 @@ class EvalLoss:
             self.Q = Q
             _, V_max = find_extreme_eigenvectors(Q)
             V_max_binary = closest_binary_eigenvector(V_max, self.max_str_len)
-            self._set_max_diff(V_max_binary)
+            self._set_max_diff(V_max_binary.reshape((self.max_str_len*self.num_syms, 1)))
 
     def _set_max_diff(self, V_max):
             # Calculate u at equilibrium

@@ -92,13 +92,14 @@ class H_SymReg:
         V_max, V_min = find_extreme_eigenvectors(self.Q)
         print(f"V_max: {V_max}")
 
-        # k = number of active neurons; in this case of hopfield, we already know what this is: the number of output positions
+        # k = number of active neurons; in this implementation of hopfield, we already know what this is: the number of output positions
         k = self.max_str_len
 
         closest_possible_V_max = closest_binary_eigenvector(V_max, k)
         closest_possible_V_min = closest_binary_eigenvector(V_min, k)
 
-        self.V_extremes = (closest_possible_V_min, closest_possible_V_max)
+        self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
+                           closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
 
         print(f"binary V_max: {self.V_extremes[1]}")
         max_E = calc_internal_energy(self.Q, closest_possible_V_max)
@@ -106,7 +107,7 @@ class H_SymReg:
 
         self.energy_domain = (min_E, max_E)
 
-        self.get_loss._set_max_diff(closest_possible_V_max)
+        self.get_loss._set_max_diff(self.V_extremes[1])
 
 
     @staticmethod
