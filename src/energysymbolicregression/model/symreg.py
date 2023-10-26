@@ -39,7 +39,7 @@ class H_SymReg:
         self.u_hist = [self.u]
         self.L_hist = [np.zeros_like(self.V)]
 
-
+        print(self.V)
         #I & Q
         self.conf = conf
         self.sets = sets
