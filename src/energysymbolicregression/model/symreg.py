@@ -101,8 +101,8 @@ class H_SymReg:
 
         print(f"(max&min) V shape: {self.V_extremes[0].shape}, Q shape: {self.Q.shape}")
 
-        max_E = calc_internal_energy(self.Q, self.V_extremes[1])
-        min_E = calc_internal_energy(self.Q, self.V_extremes[0])
+        max_E = calc_internal_energy(self.Q, self.V_extremes[1])[0][0]
+        min_E = calc_internal_energy(self.Q, self.V_extremes[0])[0][0]
 
         self.energy_domain = (min_E, max_E)
 
@@ -224,13 +224,14 @@ class H_SymReg:
 
     def plot_histories_as_video(self):
 
-        fig, axes = plt.subplots(2, 3, figsize=(8, 10))
+        fig, axes = plt.subplots(2, 3, figsize=(8, 16))
 
-        axes[0, 0].set_title('V')
-        axes[0, 1].set_title('u')
+        axes[0, 1].set_title('V')
+        axes[0, 0].set_title('u')
         axes[1, 1].set_title('Eval Loss Matrix')
         axes[1, 0].set_title('Q@V Matrix')
         axes[0, 2].set_title('Energy')
+        axes[1, 2].axis('off')
 
 
         #generate Q@V
@@ -252,14 +253,14 @@ class H_SymReg:
         global_min_QV = min(matrix.min() for matrix in c_QV_hist[5:])
         global_max_QV = max(matrix.max() for matrix in c_QV_hist[5:])
 
-        im_V = axes[0, 0].imshow(c_V_hist[0], cmap='viridis', vmin=global_min_V, vmax=global_max_V)
-        im_u = axes[0, 1].imshow(c_u_hist[0], cmap='viridis', vmin=global_min_u, vmax=global_max_u)
+        im_V = axes[0, 1].imshow(c_V_hist[0], cmap='viridis', vmin=global_min_V, vmax=global_max_V)
+        im_u = axes[0, 0].imshow(c_u_hist[0], cmap='viridis', vmin=global_min_u, vmax=global_max_u)
         im_L = axes[1, 1].imshow(c_L_hist[0], cmap='viridis', vmin=global_min_L, vmax=global_max_L)
         im_QV = axes[1, 0].imshow(c_QV_hist[0], cmap='viridis', vmin=global_min_QV, vmax=global_max_QV)
         line, = axes[0, 2].plot([], [])
 
         #fig.colorbar(im_V, ax=axes[0, 0])
-        fig.colorbar(im_u, ax=axes[0, 1])
+        fig.colorbar(im_u, ax=axes[0, 0])
         fig.colorbar(im_L, ax=axes[1, 1])
         fig.colorbar(im_QV, ax=axes[1, 0])
 
