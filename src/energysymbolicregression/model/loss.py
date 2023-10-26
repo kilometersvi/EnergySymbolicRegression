@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union
-from numpy.linalg import eigvals
+from hopfield_utils import get_diff_of_centers, find_extreme_eigenvectors, closest_binary_eigenvector
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
@@ -57,18 +57,25 @@ class EvalLoss:
 
         self._pf = lambda s: s
 
-        self.max_eigenval = 0 
+        self.max_diff = 0
         self.Q = np.zeros((self.max_str_len*self.num_syms, self.max_str_len*self.num_syms)).astype('float64')
 
 
-    def set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
+    def _set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
         self._pf = f
 
     def _set_Q(self, Q):
         if np.mean(np.abs(Q - self.Q, casting="unsafe")) > 0.1:
             self.Q = Q
-            self.max_eigenval = np.max(np.abs(eigvals(Q)))
+            _, V_max = find_extreme_eigenvectors(Q)
+            V_max_binary = closest_binary_eigenvector(V_max, self.max_str_len)
+            self._set_max_diff(V_max_binary)
 
+    def _set_max_diff(self, V_max):
+            # Calculate u at equilibrium
+            u_eq = np.dot(self.Q, V_max)
+            
+            self.max_diff = get_diff_of_centers(u_eq)
 
     @staticmethod
     def scaled_log(x, d1=0, d2=1, r1=0, r2=1, c=1.4):
@@ -114,7 +121,7 @@ class EvalLoss:
 
         sigmoid_value = 1 / (1 + np.exp((-x + (d1 + (d2 - d1) / 2)) / (c * (d2 - d1))))
         return (r2 - r1) * sigmoid_value + r1
-
+    
 
     def forward(self, token_string: str, Q: np.ndarray, u: np.ndarray, V: np.ndarray, E: float) -> np.ndarray:
 
@@ -212,48 +219,49 @@ class EvalLoss:
         unsquashed_loss_matrix = activated_neurons_loss_matrix + spread_neurons_loss_matrix
         unsquashed_loss_matrix *= -1
 
+        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence, d2=max_sum_abs_influence, r1=-1, r2=1, c=0.125)
+
         #print("unsquashed loss matrix: ")
         #print(unsquashed_loss_matrix.reshape((self.max_str_len, self.num_syms)))
         
         #----- scale eval loss based on Q density, current convergence state, and influence of Q@V on normal model learning
 
-        #Q@V scaler; scale depending on values in Q@V
-        qv = Q@V
-
-        #nonzero = depends on current state, as well as density of Q
-        qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
+        
 
         #use diff value of activated u vs inactive u to determine model convergence state (greater value = more converged = loss should be more influential)
-        mean_activations_u = np.mean(u[u > 0.5]) if len(u[u > 0.5]) > 0 else 0
-        mean_nonactivations_u = np.mean(u[u < 0.5]) if len(u[u < 0.5]) > 0 else 0
-        diff = abs(mean_activations_u - mean_nonactivations_u)
+        diff = get_diff_of_centers(u)
 
-        #normalize between 0 and 1 using max eigenvalue properties
-        normalized_diff = diff / (self.max_eigenval / 100)
+        # normalize between 0 and 1 using magic. 
+        # This is essentially a measure of convergence. When 0, model is not converged, when 1, model is very converged
+        normalized_diff = diff / self.max_diff
 
-        #max domain of input specified by user based on evaluator 
+        # max domain of input specified by user based on evaluator 
         ld2 = self.eval_clip
 
         # abs(qv_nonzero_mean) represents middle point of proposed model changes by Q matrix; scale max y to be at most this
-        lr2 = normalized_diff * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+        lr2 = normalized_diff # * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
 
-        print(f"diff: {diff}, max_eigenval: {self.max_eigenval}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {lr2}")
-        
-        lc=self.eval_fit_curve
-        ld1 = 0
-        lr1 = 0
+        # squash loss value between 0 and current convergence percentage
+        y_s = -1*self.scaled_log(-1*metric_loss_value, d1=0, d2=ld2, r1=0, r2=lr2, c=self.eval_fit_curve) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
 
-        y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
-
-        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence, d2=max_sum_abs_influence, r1=-1, r2=1, c=0.125)
 
         #print("squashed loss matrix:")
         #print(loss_matrix_base.reshape((self.max_str_len, self.num_syms)))
 
-        loss_matrix = loss_matrix_base * y_s * -1
+        #Q@V scaler; scale depending on values in Q@V
+        #nonzero = depends on current state, as well as density of Q
+        qv = Q@V
+        qv_nonzero_mean = np.abs(np.mean(qv[np.abs(qv) > 0.01]))
+        
+        #full loss matrix
+        loss_matrix = loss_matrix_base * y_s * qv_nonzero_mean * -1
 
         #print("eval_applied loss matrix:")
         #print(loss_matrix.reshape((self.max_str_len, self.num_syms)))
+
+
+        print(f"diff: {diff}, max_diff: {self.max_diff}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {lr2}")
+
 
         
         return loss_matrix

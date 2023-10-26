@@ -7,6 +7,7 @@ from model.factories import QFactory, IFactory
 from model.optimizer import *
 from model.loss import *
 from model.onehotencode import OneHotEncoder
+from model.hopfield_utils import *
 
 
 
@@ -76,12 +77,34 @@ class H_SymReg:
             self.get_loss = EvalLoss(self.evaluator, self.max_str_len, self.num_syms, eval_clip=eval_clip, min_E=min_energy_for_eval)
         else:
             self.get_loss = loss
-        self.get_loss.set_tokenstring_preprocess_function(self.clean_output)
+        self.get_loss._set_tokenstring_preprocess_function(self.clean_output)
 
 
         self.optimizer = optimizer
         if optimizer is not None:
             self.optimizer.set_model(self)
+
+        self._set_internal_energy_domain()
+
+
+    def _set_internal_energy_domain(self):
+
+        V_max, V_min = find_extreme_eigenvectors(self.Q)
+
+        # k = number of active neurons; in this case of hopfield, we already know what this is: the number of output positions
+        k = self.max_str_len
+
+        closest_possible_V_max = closest_binary_eigenvector(V_max, k)
+        closest_possible_V_min = closest_binary_eigenvector(V_min, k)
+
+        self.V_extremes = (closest_possible_V_min, closest_possible_V_max)
+
+        max_E = calc_internal_energy(Q, closest_possible_V_max)
+        min_E = calc_internal_energy(Q, closest_possible_V_min)
+
+        self.energy_domain = (min_E, max_E)
+
+        self.get_loss._set_max_diff(closest_possible_V_max)
 
 
     @staticmethod
