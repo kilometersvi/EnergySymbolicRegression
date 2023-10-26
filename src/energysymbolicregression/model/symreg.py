@@ -216,17 +216,23 @@ class H_SymReg:
 
     def plot_histories_as_video(self):
 
-        fig, axes = plt.subplots(2, 2, figsize=(8, 6))
+        fig, axes = plt.subplots(3, 2, figsize=(8, 6))
 
         axes[0, 0].set_title('V')
         axes[0, 1].set_title('u')
-        axes[1, 0].set_title('Energy')
-        axes[1, 1].set_title('Eval Loss')
+        axes[1, 1].set_title('Eval Loss Matrix')
+        axes[1, 0].set_title('Q@V Matrix')
+        axes[2, 0].set_title('Energy')
+
+
+        #generate Q@V
+        QV_hist = [self.Q@v for v in self.V_hist]
 
         # Reshape grid datas
         c_V_hist = [v.reshape(self.max_str_len, self.num_syms) for v in self.V_hist]
         c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.u_hist]
         c_L_hist = [l.reshape((self.max_str_len, self.num_syms)) for l in self.L_hist]
+        c_QV_hist = [qv.reshape((self.max_str_len, self.num_syms)) for qv in QV_hist]
 
         # Get global min and max for consistent color limits
         global_min_V = min(matrix.min() for matrix in c_V_hist)
@@ -235,29 +241,36 @@ class H_SymReg:
         global_max_u = max(matrix.max() for matrix in c_u_hist)
         global_min_L = min(matrix.min() for matrix in c_L_hist)
         global_max_L = max(matrix.max() for matrix in c_L_hist)
+        global_min_QV = min(matrix.min() for matrix in c_QV_hist)
+        global_max_QV = max(matrix.max() for matrix in c_QV_hist)
 
         im_V = axes[0, 0].imshow(c_V_hist[0], cmap='viridis', vmin=global_min_V, vmax=global_max_V)
         im_u = axes[0, 1].imshow(c_u_hist[0], cmap='viridis', vmin=global_min_u, vmax=global_max_u)
-        line, = axes[1, 0].plot([], [])
         im_L = axes[1, 1].imshow(c_L_hist[0], cmap='viridis', vmin=global_min_L, vmax=global_max_L)
+        im_QV = axes[1, 0].imshow(c_QV_hist[0], cmap='viridis', vmin=global_min_QV, vmax=global_max_QV)
+        line, = axes[2, 0].plot([], [])
 
         #fig.colorbar(im_V, ax=axes[0, 0])
         fig.colorbar(im_u, ax=axes[0, 1])
         fig.colorbar(im_L, ax=axes[1, 1])
+        fig.colorbar(im_QV, ax=axes[1, 0])
 
         def animate(i):
             s = self.decode_output(V=c_V_hist[i].reshape((self.nUnits,1)))
             y = self.evaluate(s)
-            if y is not None:
-                s += f" = {y}"
+            if y is None: y = "err"
+            s += f" = {y}"
             fig.suptitle(f"{s}")
+            
             im_V.set_array(c_V_hist[i])
             im_u.set_array(c_u_hist[i])
             im_L.set_array(c_L_hist[i])
+            im_QV.set_array(c_QV_hist[i])
+            
             if i >= 1:
-                line.set_data(np.arange(1, i + 1), self.E_hist[1:i + 1])
-                axes[1, 0].relim()
-                axes[1, 0].autoscale_view(True, True, True)
+                line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
+                axes[2, 0].relim()
+                axes[2, 0].autoscale_view(True, True, True)
 
 
         anim = FuncAnimation(fig, animate, frames=len(c_V_hist), interval=40, repeat=False)
