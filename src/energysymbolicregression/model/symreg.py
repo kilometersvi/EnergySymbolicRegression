@@ -202,6 +202,7 @@ class H_SymReg:
                 
 
                 if (e - lastBigJump) >= earlystopping:
+                    print("lastbigjumped")
                     break
                 if min_E is not None and E < min_E:
                     if abs(len((self.V > 0.5)) - self.max_str_len) < 2:
