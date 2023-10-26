@@ -179,7 +179,7 @@ class H_SymReg:
             e1 = -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))
             e2 = np.dot(self.V.T, I+L)
 
-            print(f"internal energy: {e1}, external energy: {e2}")
+            print(f"internal energy: {e1}, external energy: {e2}, total energy: {e1 - e2}")
             E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
