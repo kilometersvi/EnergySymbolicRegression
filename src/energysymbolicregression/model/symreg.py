@@ -99,8 +99,8 @@ class H_SymReg:
 
         self.V_extremes = (closest_possible_V_min, closest_possible_V_max)
 
-        max_E = calc_internal_energy(Q, closest_possible_V_max)
-        min_E = calc_internal_energy(Q, closest_possible_V_min)
+        max_E = calc_internal_energy(self.Q, closest_possible_V_max)
+        min_E = calc_internal_energy(self.Q, closest_possible_V_min)
 
         self.energy_domain = (min_E, max_E)
 
