@@ -164,7 +164,7 @@ class H_SymReg:
             c_iter = e
 
             # evallosses
-            L = self.get_evalloss(eq = self.decode_output(V=self.V, clean=True))
+            L = self.get_evalloss(eq = self.decode_output(V=self.V, clean=True)) *10
 
             if self.optimizer is not None:
                 L = self.optimizer.process(L, self. V)
