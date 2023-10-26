@@ -77,6 +77,7 @@ class H_SymReg:
         else:
             self.get_loss = loss
         self.get_loss._set_tokenstring_preprocess_function(self.clean_output)
+        self.get_loss._set_Q(self.Q)
 
 
         self.optimizer = optimizer
