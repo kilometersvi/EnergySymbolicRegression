@@ -143,7 +143,7 @@ class H_SymReg:
             return ys[0]
 
 
-    def update(self, I=None, n_iters=1000, min_dE=1, earlystopping=50, min_E=-130):
+    def update(self, I=None, n_iters=1000, min_dE=5, earlystopping=50, min_E=-130):
         """
         I = bias
         n_iters = epochs
