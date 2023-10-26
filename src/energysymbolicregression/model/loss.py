@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union
-from hopfield_utils import get_diff_of_centers, find_extreme_eigenvectors, closest_binary_eigenvector
+from model.hopfield_utils import get_diff_of_centers, find_extreme_eigenvectors, closest_binary_eigenvector
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
