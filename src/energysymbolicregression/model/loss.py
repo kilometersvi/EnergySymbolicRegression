@@ -233,13 +233,13 @@ class EvalLoss:
 
         # normalize between 0 and 1 using magic. 
         # This is essentially a measure of convergence. When 0, model is not converged, when 1, model is very converged
-        normalized_diff = diff / self.max_diff
+        convergence = diff / self.max_diff
 
         # max domain of input specified by user based on evaluator 
         ld2 = self.eval_clip
 
         # abs(qv_nonzero_mean) represents middle point of proposed model changes by Q matrix; scale max y to be at most this
-        lr2 = normalized_diff # * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+        lr2 = convergence # * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
 
         # squash loss value between 0 and current convergence percentage
         y_s = -1*self.scaled_log(-1*metric_loss_value, d1=0, d2=ld2, r1=0, r2=lr2, c=self.eval_fit_curve) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
@@ -248,22 +248,22 @@ class EvalLoss:
         #print("squashed loss matrix:")
         #print(loss_matrix_base.reshape((self.max_str_len, self.num_syms)))
 
+
+        #scale loss by internal energy; when model over threshold of convergence, loss (external energy) will be more influential than internal energy (q@v)
         #Q@V scaler; scale depending on values in Q@V
-        #nonzero = depends on current state, as well as density of Q
+        # * 2 = potentially twice as influential as Q@V
         qv = Q@V
-        qv_nonzero_mean = np.abs(np.mean(qv[np.abs(qv) > 0.01]))
+        internal_energy_scaler = np.mean(np.abs(qv)) * 2
         
         #full loss matrix
-        loss_matrix = loss_matrix_base * y_s * qv_nonzero_mean * -1
+        loss_matrix = loss_matrix_base * y_s * internal_energy_scaler * -1
 
         #print("eval_applied loss matrix:")
         #print(loss_matrix.reshape((self.max_str_len, self.num_syms)))
 
 
-        print(f"diff: {diff}, max_diff: {self.max_diff}, normalized diff: {normalized_diff}, abs(qv_nonzero_mean): {abs(qv_nonzero_mean)}, old lr2: {10*abs(qv_nonzero_mean) + 3}, new lr2: {lr2}")
+        print(f"diff: {diff}, max_diff: {self.max_diff}, convergence: {convergence}, internal energy scaler: {internal_energy_scaler}")
 
-
-        
         return loss_matrix
 
 

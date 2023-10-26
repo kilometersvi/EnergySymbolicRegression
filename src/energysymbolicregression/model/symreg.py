@@ -91,15 +91,30 @@ class H_SymReg:
         V_max, V_min = find_extreme_eigenvectors(self.Q)
 
         # k = number of active neurons; in this implementation of hopfield, we already know what this is: the number of output positions
-        k = self.max_str_len
+        #k = self.max_str_len
+
+        optimal_k = 0
+        min_energy = 99999
+        self.k_e_hist = []
+
+        for k in range(1, V_max.shape[0]):
+            V_k = closest_binary_eigenvector(V_max, k)
+            E_k = calc_internal_energy(self.Q, V_k)
+            self.k_e_hist.append(E_k)
+            
+            if E_k < min_energy:
+                min_energy = E_k
+                optimal_k = k
+                optimal_V = V_k
+        
+        print(optimal_k)
+        k = optimal_k
 
         closest_possible_V_max = closest_binary_eigenvector(V_max, k)
         closest_possible_V_min = closest_binary_eigenvector(V_min, k)
 
         self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
                            closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
-
-        print(f"(max&min) V shape: {self.V_extremes[0].shape}, Q shape: {self.Q.shape}")
 
         max_E = calc_internal_energy(self.Q, self.V_extremes[1])[0][0]
         min_E = calc_internal_energy(self.Q, self.V_extremes[0])[0][0]
@@ -178,8 +193,6 @@ class H_SymReg:
             e2 = np.dot(self.V.T, I+L)
 
             print(f"internal energy: {e1}, external energy: {e2}")
-            if e == 0:
-                print(f"V shape: {self.V.shape}, Q shape: {self.Q.shape}, I shape: {I.shape}, L shape: {L.shape}")
             E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
