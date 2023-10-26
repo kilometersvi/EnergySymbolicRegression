@@ -262,7 +262,7 @@ class EvalLoss:
         #print(loss_matrix.reshape((self.max_str_len, self.num_syms)))
 
 
-        print(f"diff: {diff}, max_diff: {self.max_diff}, convergence: {convergence}, internal energy scaler: {internal_energy_scaler}")
+        print(f"loss: {metric_loss_value}, udiff: {diff}, max_udiff: {self.max_diff}, convergence: {convergence}, internal energy scaler: {internal_energy_scaler}")
 
         return loss_matrix
 
