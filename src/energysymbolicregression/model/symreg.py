@@ -172,6 +172,11 @@ class H_SymReg:
             self.V = self.squasher(self.u, self.gain)
 
             # energy calc
+            e1 = -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))
+            e2 = np.dot(self.V.T, I+L)
+
+            print(f"internal energy: {e1}, external energy: {e2}")
+            
             E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
