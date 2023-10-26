@@ -176,7 +176,7 @@ class H_SymReg:
             e2 = np.dot(self.V.T, I+L)
 
             print(f"internal energy: {e1}, external energy: {e2}")
-            
+
             E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
             #print(f"{i},{np.dot(self.V.T, new_I)}")
 
@@ -221,13 +221,13 @@ class H_SymReg:
 
     def plot_histories_as_video(self):
 
-        fig, axes = plt.subplots(3, 2, figsize=(8, 6))
+        fig, axes = plt.subplots(2, 3, figsize=(8, 6))
 
         axes[0, 0].set_title('V')
         axes[0, 1].set_title('u')
         axes[1, 1].set_title('Eval Loss Matrix')
         axes[1, 0].set_title('Q@V Matrix')
-        axes[2, 0].set_title('Energy')
+        axes[0, 2].set_title('Energy')
 
 
         #generate Q@V
@@ -253,7 +253,7 @@ class H_SymReg:
         im_u = axes[0, 1].imshow(c_u_hist[0], cmap='viridis', vmin=global_min_u, vmax=global_max_u)
         im_L = axes[1, 1].imshow(c_L_hist[0], cmap='viridis', vmin=global_min_L, vmax=global_max_L)
         im_QV = axes[1, 0].imshow(c_QV_hist[0], cmap='viridis', vmin=global_min_QV, vmax=global_max_QV)
-        line, = axes[2, 0].plot([], [])
+        line, = axes[0, 2].plot([], [])
 
         #fig.colorbar(im_V, ax=axes[0, 0])
         fig.colorbar(im_u, ax=axes[0, 1])
@@ -274,8 +274,8 @@ class H_SymReg:
             
             if i >= 1:
                 line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
-                axes[2, 0].relim()
-                axes[2, 0].autoscale_view(True, True, True)
+                axes[0, 2].relim()
+                axes[0, 2].autoscale_view(True, True, True)
 
 
         anim = FuncAnimation(fig, animate, frames=len(c_V_hist), interval=40, repeat=False)
