@@ -198,10 +198,14 @@ class H_SymReg:
                 #print(f"{(np.abs(dL) <= min_dL)}, {(L < minL)}, {(i - lastBigJump) >= 100}")
                 #if ((np.abs(dL) <= min_dL) and (L < minL)) or ((i - lastBigJump) >= 100):
                 #    break
+
+                
+
                 if (e - lastBigJump) >= earlystopping:
                     break
                 if min_E is not None and E < min_E:
-                    break
+                    if abs(len((self.V > 0.5)) - self.max_str_len) < 2:
+                        break
 
                 if e%(n_iters//100)==0:
                     print(f'{e}: {self.decode_output(self.V, clean=False)}')
