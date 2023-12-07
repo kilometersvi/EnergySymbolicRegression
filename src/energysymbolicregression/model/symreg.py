@@ -170,7 +170,7 @@ class H_SymReg:
 
     
     def plot_histories_as_video(self):
-
+        
         fig, axes = plt.subplots(2, 3, figsize=(10, 6))
 
         axes[0, 1].set_title('V')
@@ -189,6 +189,10 @@ class H_SymReg:
         c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.ghn.u_hist]
         c_L_hist = [l.reshape((self.max_str_len, self.num_syms)) for l in self.L_hist]
         c_QV_hist = [qv.reshape((self.max_str_len, self.num_syms)) for qv in QV_hist]
+
+
+        print(len(self.ghn.E_hist))
+        print(len(c_QV_hist))
 
         # Get global min and max for consistent color limits
         global_min_V = min(matrix.min() for matrix in c_V_hist)
