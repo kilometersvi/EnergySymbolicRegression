@@ -65,7 +65,7 @@ class GHN:
         self.u = s.u
         self.V = s.V
         print(f'q: {self.Q.shape}, V: {self.V.shape}, I: {self.I.shape}')
-        s.E = self.calc_energy(self.Q, self.V, self.I)
+        s.E = GHN.calc_energy(self.Q, self.V, self.I)
 
         self.u_hist.append(s.u)
         self.V_hist.append(s.V)
