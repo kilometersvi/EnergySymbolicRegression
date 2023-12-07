@@ -73,13 +73,15 @@ class GHN:
     @flexmethod('Q','u','V','I',dt=0.01,gain=999)
     def forward(self):
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
-        self.u = s.u #when calling this statically, this does nothing- need to use "update from state"
-        self.V = s.V
         s.calc_E() 
 
-        self.u_hist.append(s.u)
-        self.V_hist.append(s.V)
-        self.E_hist.append(s.E)
+        if not self.__static_from_flexmethod__:
+            self.u = s.u 
+            self.V = s.V
+
+            self.u_hist.append(s.u)
+            self.V_hist.append(s.V)
+            self.E_hist.append(s.E)
 
         return s
 
