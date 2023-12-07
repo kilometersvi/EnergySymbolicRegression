@@ -234,9 +234,10 @@ class H_SymReg:
                 y_data = self.E_hist[1: i + 1]
 
                 # Check if data arrays are not empty and have the same length
-                if x_data.size > 0 and y_data.size > 0 and x_data.size == y_data.size:
+                if len(x_data) > 0 and len(y_data) > 0 and len(x_data) == len(y_data):
+                    print(i)
                     line.set_data(x_data, y_data)
-                    line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
+                    #line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
                     axes[0, 2].relim()
                     axes[0, 2].autoscale_view(True, True, True)
                 else:
