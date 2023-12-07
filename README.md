@@ -1,6 +1,6 @@
 # Symbolic Regression with Hebbian Learning
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kilometersvi/EnergySymbolicRegression/blob/main/src/energysymbolicregression/notebooks/math.ipynbxs)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kilometersvi/EnergySymbolicRegression/blob/main/src/energysymbolicregression/notebooks/math.ipynb)
 
 This research project explores the integration of symbolic regression into energy-based models (EBMs) using Hopfield networks. 
 

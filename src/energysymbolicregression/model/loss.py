@@ -1,15 +1,16 @@
 import numpy as np
 from typing import Callable, Tuple, Union
+from model.hopfield import Heigen
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
-
+   
 class EvaluatorBase:
     def forward(self, tokenstring: str) -> Tuple[float, float]:
         # some function on tokenstring, eg eval()
         # return Tuple(y_evaluated, y_true)
         # return None to indicate failure to evaluate
-        return None
+        return None, 0
 
     def __call__(self, s):
         return self.forward(s)
@@ -56,10 +57,25 @@ class EvalLoss:
 
         self._pf = lambda s: s
 
+        self.max_diff = 0
+        self.Q = np.zeros((self.max_str_len*self.num_syms, self.max_str_len*self.num_syms)).astype('float64')
 
-    def set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
+
+    def _set_tokenstring_preprocess_function(self, f: CleanFunctCallable):
         self._pf = f
 
+    def _set_Q(self, Q):
+        if np.mean(np.abs(Q - self.Q, casting="unsafe")) > 0.1:
+            self.Q = Q
+            _, V_max = Heigen.find_extreme_eigenvectors(Q)
+            #V_max_binary = Heigen.closest_binary_eigenvector(V_max, self.max_str_len)
+            self._set_max_diff(V_max.reshape((self.max_str_len*self.num_syms, 1)))
+
+    def _set_max_diff(self, V_max):
+            # Calculate u at equilibrium
+            u_eq = np.dot(self.Q, V_max)
+            
+            self.max_diff = Heigen.get_diff_of_centers(u_eq)
 
     @staticmethod
     def scaled_log(x, d1=0, d2=1, r1=0, r2=1, c=1.4):
@@ -105,32 +121,33 @@ class EvalLoss:
 
         sigmoid_value = 1 / (1 + np.exp((-x + (d1 + (d2 - d1) / 2)) / (c * (d2 - d1))))
         return (r2 - r1) * sigmoid_value + r1
-
+    
 
     def forward(self, token_string: str, Q: np.ndarray, u: np.ndarray, V: np.ndarray, E: float) -> np.ndarray:
 
+        self._set_Q(Q)
 
         #---- evaluate V to get eval loss from evaluator
 
         c_ts = self._pf(V, token_string)
 
+        
+        y_o, y_t = self.evaluator(c_ts)
+        if y_o is None:
+            y_o = self.eval_clip 
+
+        metric_loss_value = -1 * self.metric(y_o, y_t)
+        """ 
         if self.min_E is not None and E > self.min_E:
             #return 0 if energy is too high (give model time to output evaluable expressions, etc)
             return np.zeros(V.shape)
 
-        ys = self.evaluator(c_ts)
-        if ys is None:
+        y_o, y_t = self.evaluator(c_ts)
+        if y_o is None:
             #no longer punish lack of evaluation, instead give model more time to converge using Qfuncts into evaluable output
             return np.zeros(V.shape)#-1*np.ones(V.shape)*self.eval_clip 
-        y_o, y_t = ys
-
-        metric_loss_value = -1 * self.metric(ys[0], ys[1])
-
-        #print(f"r: {metric_loss_value}")
-
-        #print(f"y_s: {y_s}") #y_s: -1
-
-
+        metric_loss_value = -1 * self.metric(y_o, y_t)
+        """
         #----- get most active neurons mask matrix
 
         V_reshaped = V.reshape(self.max_str_len, self.num_syms)
@@ -142,9 +159,7 @@ class EvalLoss:
         most_active_neurons_mask_reshaped[row_indices, col_indices] = 1
         most_active_neurons_mask = most_active_neurons_mask_reshaped.reshape((self.max_str_len * self.num_syms, 1))
 
-        #print("most_active_neurons_mask: ")
-        #print(most_active_neurons_mask.reshape((self.max_str_len, self.num_syms)))
-
+        
         #----- get total influence on each of the most activated neurons, to create a normalizer
 
 
@@ -204,35 +219,51 @@ class EvalLoss:
         unsquashed_loss_matrix = activated_neurons_loss_matrix + spread_neurons_loss_matrix
         unsquashed_loss_matrix *= -1
 
+        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence, d2=max_sum_abs_influence, r1=-1, r2=1, c=0.125)
+
         #print("unsquashed loss matrix: ")
         #print(unsquashed_loss_matrix.reshape((self.max_str_len, self.num_syms)))
+        
+        #----- scale eval loss based on Q density, current convergence state, and influence of Q@V on normal model learning
 
-        #Q@V scaler; scale depending on values in Q@V
-        qv = Q@V
-        qv_max = np.max(qv)
-        qv_min = np.min(qv)
-        qv_nonzero_mean = np.mean(qv[np.abs(qv) > 0.01])
+        
 
+        #use diff value of activated u vs inactive u to determine model convergence state (greater value = more converged = loss should be more influential)
+        diff = Heigen.get_diff_of_centers(u)
 
-        ld1=0
-        ld2=self.eval_clip
-        lr1=0 # max((qv_max)*-1, 0) - 3
-        lr2=10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
-        lc=self.eval_fit_curve
+        # normalize between 0 and 1 using magic. 
+        # This is essentially a measure of convergence. When 0, model is not converged, when 1, model is very converged
+        convergence = diff / self.max_diff
 
-        y_s = -1*self.scaled_log(-1*metric_loss_value, d1=ld1, d2=ld2, r1=lr1, r2=lr2, c=lc) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
+        # max domain of input specified by user based on evaluator 
+        ld2 = self.eval_clip
 
-        loss_matrix_base = self.scaled_sigmoid(unsquashed_loss_matrix, d1=-1*max_sum_abs_influence, d2=max_sum_abs_influence, r1=-1, r2=1, c=0.125)
+        # abs(qv_nonzero_mean) represents middle point of proposed model changes by Q matrix; scale max y to be at most this
+        lr2 = convergence # * abs(qv_nonzero_mean)# 10*abs(qv_nonzero_mean) + 3 #min((qv_min)*-1, 0) + 3
+
+        # squash loss value between 0 and current convergence percentage
+        y_s = -1*self.scaled_log(-1*metric_loss_value, d1=0, d2=ld2, r1=0, r2=lr2, c=self.eval_fit_curve) #r1=qv_min-1, r2=qv_max+1, c=self.eval_fit_curve)
+
 
         #print("squashed loss matrix:")
         #print(loss_matrix_base.reshape((self.max_str_len, self.num_syms)))
 
-        loss_matrix = loss_matrix_base * y_s * -1
+
+        #scale loss by internal energy; when model over threshold of convergence, loss (external energy) will be more influential than internal energy (q@v)
+        #Q@V scaler; scale depending on values in Q@V
+        # * 2 = potentially twice as influential as Q@V
+        qv = Q@V
+        internal_energy_scaler = np.mean(np.abs(qv)) * 2
+        
+        #full loss matrix
+        loss_matrix = loss_matrix_base * y_s * internal_energy_scaler * -1
 
         #print("eval_applied loss matrix:")
         #print(loss_matrix.reshape((self.max_str_len, self.num_syms)))
 
-        
+
+        print(f"loss: {metric_loss_value}, udiff: {diff}, max_udiff: {self.max_diff}, convergence: {convergence}, internal energy scaler: {internal_energy_scaler}")
+
         return loss_matrix
 
 
