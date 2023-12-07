@@ -238,9 +238,9 @@ class H_SymReg:
             im_QV.set_array(c_QV_hist[i])
             print(i)
             
-            if i >= 2:
+            if i >= 1:
                 x_data = np.arange(2, i + 1)
-                y_data = self.E_hist[2: i + 1]
+                y_data = self.ghn.E_hist[2: i + 1]
 
                 # Check if data arrays are not empty and have the same length
                 if len(x_data) > 0 and len(y_data) > 0 and len(x_data) == len(y_data):
