@@ -141,7 +141,8 @@ class H_SymReg:
 
             self.L_hist.append(L)
 
-            s = self.ghn.forward(self.Q,self.u,self.V,L,dt=self.ghn.dt,gain=self.ghn.gain)
+            s = GHN.forward(self.Q,self.u,self.V,L,dt=self.ghn.dt,gain=self.ghn.gain)
+            self.ghn.update_from_state(s)
 
             if len(self.ghn.E_hist) > 1:
                 dE = self.ghn.E_hist[-1] - self.ghn.E_hist[-2]

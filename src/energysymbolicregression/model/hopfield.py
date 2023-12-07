@@ -73,7 +73,7 @@ class GHN:
     @flexmethod('Q','u','V','I',dt=0.01,gain=999)
     def forward(self):
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
-        self.u = s.u
+        self.u = s.u #when calling this statically, this does nothing- need to use "update from state"
         self.V = s.V
         s.calc_E() 
 
@@ -83,6 +83,13 @@ class GHN:
 
         return s
 
+    def update_from_state(self, hebbian_state):
+        self.u = hebbian_state.u
+        self.V = hebbian_state.V
+        
+        self.u_hist.append(hebbian_state.u)
+        self.V_hist.append(hebbian_state.V)
+        self.E_hist.append(hebbian_state.E)
 
     #----- Energy Functions -----#
 
