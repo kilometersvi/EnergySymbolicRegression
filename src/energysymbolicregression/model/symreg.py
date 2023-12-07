@@ -1,6 +1,6 @@
 # Import necessary classes from Hopfield.py
-from hopfield import GHN, Heigen
 import numpy as np
+from model.hopfield import GHN, Heigen
 from model.onehotencode import OneHotEncoder
 from model.loss import EvalLoss, EvaluatorBase
 from model.factories import QFactory, IFactory
