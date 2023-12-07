@@ -241,8 +241,10 @@ class H_SymReg:
                     axes[0, 2].relim()
                     axes[0, 2].autoscale_view(True, True, True)
                 else:
-                    print(x_data.size)
-                    print(y_data.size)
+                    print(len(x_data))
+                    print(x_data)
+                    print(len(y_data))
+                    print(y_data)
                     raise TypeError()
 
 
