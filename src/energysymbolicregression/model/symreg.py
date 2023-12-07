@@ -193,6 +193,8 @@ class H_SymReg:
 
         print(len(self.ghn.E_hist))
         print(len(c_QV_hist))
+        print(self.ghn.E_hist)
+        print(self.ghn.E_hist[0])
 
         # Get global min and max for consistent color limits
         global_min_V = min(matrix.min() for matrix in c_V_hist)
