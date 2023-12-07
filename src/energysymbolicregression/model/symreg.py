@@ -225,7 +225,7 @@ class H_SymReg:
             print(self.ghn.E_hist)
             print(self.ghn.E_hist[0])
 
-            
+
             s = self.decode_output(V=c_V_hist[i].reshape((self.nUnits,1)))
             y = self.evaluate(s)
             if y is None: y = "err"
@@ -238,18 +238,20 @@ class H_SymReg:
             im_QV.set_array(c_QV_hist[i])
             print(i)
             
-            if i >= 3:
-                x_data = np.arange(1, i + 1)
-                y_data = self.E_hist[1: i + 1]
+            if i >= 2:
+                x_data = np.arange(2, i + 1)
+                y_data = self.E_hist[2: i + 1]
 
                 # Check if data arrays are not empty and have the same length
                 if len(x_data) > 0 and len(y_data) > 0 and len(x_data) == len(y_data):
                     print(i)
+                    print('success')
                     line.set_data(x_data, y_data)
                     #line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
                     axes[0, 2].relim()
                     axes[0, 2].autoscale_view(True, True, True)
                 else:
+                    print('oh no')
                     print(len(x_data))
                     print(x_data)
                     print(len(y_data))
