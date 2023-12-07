@@ -64,6 +64,7 @@ class GHN:
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
         self.u = s.u
         self.V = s.V
+        print(f'q: {self.Q.shape}, V: {self.V.shape}, I: {self.I.shape}')
         s.E = self.calc_energy(self.Q, self.V, self.I)
 
         self.u_hist.append(s.u)
@@ -84,7 +85,7 @@ class GHN:
     def calc_energy_external(self) -> float:
         return -1 * np.dot(self.V.T, self.I)[0][0]
     
-    @flexmethod("Q", "V", "I")
+    @flexmethod.nssync("Q", "V", "I")
     def calc_energy(self):
         print(f"V.shape {self.V.shape}, Q.shape {self.Q.shape}, I.shape {self.I.shape}")
 
