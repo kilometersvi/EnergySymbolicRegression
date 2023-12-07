@@ -141,10 +141,10 @@ class H_SymReg:
 
             self.L_hist.append(L)
 
-            s = self.GHN.forward(self.Q,self.u,self.V,L,dt=self.ghn.dt,gain=self.ghn.gain)
+            s = self.ghn.forward(self.Q,self.u,self.V,L,dt=self.ghn.dt,gain=self.ghn.gain)
 
-            if len(self.ghd.E_hist) > 1:
-                dE = self.ghd.E_hist[-1] - self.ghd.E_hist[-2]
+            if len(self.ghn.E_hist) > 1:
+                dE = self.ghn.E_hist[-1] - self.ghn.E_hist[-2]
 
                 if abs(dE) > min_dE:
                     lastBigJump = e
