@@ -293,7 +293,7 @@ class Heigen:
         min_i = -1
         for i in range(eigenvectors.shape[1]):
             v = eigenvectors[:,i].reshape((Q.shape[0], 1))
-            e = GHN.calc_internal_energy(Q, v)[0][0]
+            e = GHN.calc_energy_internal(Q, v)[0][0]
             if e < min_e:
                 min_i = i
                 min_e = e
