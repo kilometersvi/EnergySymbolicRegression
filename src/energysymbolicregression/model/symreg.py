@@ -230,9 +230,19 @@ class H_SymReg:
             im_QV.set_array(c_QV_hist[i])
             
             if i >= 1:
-                line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
-                axes[0, 2].relim()
-                axes[0, 2].autoscale_view(True, True, True)
+                x_data = np.arange(1, i + 1)
+                y_data = self.E_hist[1: i + 1]
+
+                # Check if data arrays are not empty and have the same length
+                if x_data.size > 0 and y_data.size > 0 and x_data.size == y_data.size:
+                    line.set_data(x_data, y_data)
+                    line.set_data(np.arange(1, i + 1), self.E_hist[1: i + 1])
+                    axes[0, 2].relim()
+                    axes[0, 2].autoscale_view(True, True, True)
+                else:
+                    print(x_data.size)
+                    print(y_data.size)
+                    raise TypeError()
 
 
         anim = FuncAnimation(fig, animate, frames=len(c_V_hist), interval=40, repeat=False)
