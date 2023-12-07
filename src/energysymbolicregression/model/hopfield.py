@@ -85,7 +85,7 @@ class GHN:
     def calc_energy_external(self) -> float:
         return -1 * np.dot(self.V.T, self.I)[0][0]
     
-    @flexmethod.nssync("Q", "V", "I")
+    @flexmethod("Q", "V", "I")
     def calc_energy(self):
         print(f"V.shape {self.V.shape}, Q.shape {self.Q.shape}, I.shape {self.I.shape}")
 
