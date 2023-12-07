@@ -16,6 +16,17 @@ class Hebbian_State:
         self.du = du
         self.E = E
     
+    def calc_E(self):
+        self.E = GHN.calc_energy(self.Q, self.V, self.I)
+    
+    def next(self,dt=0.01,gain=999):
+        updated_state = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, dt, gain)
+        self.u = updated_state.u
+        self.V = updated_state.V
+        self.du = updated_state.du
+        self.E = updated_state.E
+
+    
 
 # Graded Hopfield Network
 class GHN:
@@ -65,12 +76,13 @@ class GHN:
         self.u = s.u
         self.V = s.V
         print(f'q: {self.Q.shape}, V: {self.V.shape}, I: {self.I.shape}')
-        s.E = GHN.calc_energy(self.Q, self.V, self.I)
+        s.calc_E() #.E = GHN.calc_energy(self.Q, self.V, self.I)
 
         self.u_hist.append(s.u)
         self.V_hist.append(s.V)
         self.E_hist.append(s.E)
 
+        return s
 
 
     #----- Energy Functions -----#
