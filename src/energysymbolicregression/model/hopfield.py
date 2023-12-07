@@ -59,7 +59,7 @@ class GHN:
 
         return Hebbian_State(u, Q, V, I, du)
     
-    @flexmethod('Q','u','V','I','dt=0.01','gain=999')
+    @flexmethod('Q','u','V','I','dt'=0.01,'gain'=999)
     def forward(self):
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
         self.u = s.u
