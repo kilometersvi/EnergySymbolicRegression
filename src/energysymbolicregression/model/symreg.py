@@ -66,6 +66,22 @@ class H_SymReg:
 
         self._set_internal_energy_domain()
 
+    @property
+    def u(self):
+        return self.ghn.u
+
+    @property
+    def V(self):
+        return self.ghn.V
+
+    @property
+    def Q(self):
+        return self.ghn.Q
+
+    @property
+    def I(self):
+        return self.ghn.I
+    
     def _set_internal_energy_domain(self):
         V_max, V_min = Heigen.find_extreme_eigenvectors(self.ghn.Q)
         self.ghn.V_extremes = (V_min.reshape((self.max_str_len * self.num_syms, 1)), V_max.reshape((self.max_str_len * self.num_syms, 1)))
