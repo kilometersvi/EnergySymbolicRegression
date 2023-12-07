@@ -70,7 +70,7 @@ class H_SymReg:
         V_max, V_min = Heigen.find_extreme_eigenvectors(self.ghn.Q)
         self.ghn.V_extremes = (V_min.reshape((self.max_str_len * self.num_syms, 1)), V_max.reshape((self.max_str_len * self.num_syms, 1)))
 
-        print(f"Q: {self.ghn.Q.shape}, V: {self.ghn.V_extremes[1]}")
+        print(f"Q: {self.ghn.Q.shape}, V: {self.ghn.V_extremes[1].shape}")
         max_E = GHN.calc_energy_internal(self.ghn.Q, self.ghn.V_extremes[1])
         min_E = GHN.calc_energy_internal(self.ghn.Q, self.ghn.V_extremes[0])
         self.energy_domain = (min_E, max_E)
