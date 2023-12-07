@@ -147,7 +147,7 @@ class GHN:
         earlystopping = number of iters without change before quitting
         min_L = minimum energy before quitting
         """
-
+        min_found_E = np.inf
         lastBigJump = 0
 
         for e in range(n_iters):
