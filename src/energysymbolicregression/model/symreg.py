@@ -64,6 +64,8 @@ class H_SymReg:
         if self.optimizer:
             self.optimizer.set_model(self)
 
+        self.L_hist = [np.zeros_like(self.V)]
+
         self._set_internal_energy_domain()
 
     @property
@@ -119,7 +121,41 @@ class H_SymReg:
             return ys[0]
         
     def update(self, I=None, n_iters=1000, min_dE=5, earlystopping=50, min_E=-130):
-        self.ghn.update(n_iters=n_iters, min_dE=min_dE, earlystopping=earlystopping, min_E=min_E)
+        """
+        n_iters = epochs
+        min_dE = minimum change in E before noticing change in E
+        earlystopping = number of iters without change before quitting
+        min_E = minimum energy before quitting
+        """
+        
+        min_found_E = np.inf
+        lastBigJump = 0
+
+        for e in range(n_iters):
+            
+            # evallosses
+            L = self.get_evalloss(eq = self.decode_output(V=self.V, clean=True))
+
+            if self.optimizer is not None:
+                L = self.optimizer.process(L, self. V)
+
+            self.L_hist.append(L)
+
+            s = self.GHN.forward(self.Q,self.u,self.V,L,dt=self.ghn.dt,gain=self.ghn.gain)
+
+            if len(self.ghd.E_hist) > 1:
+                dE = self.ghd.E_hist[-1] - self.ghd.E_hist[-2]
+
+                if abs(dE) > min_dE:
+                    lastBigJump = e
+                min_found_E = min(min_found_E, s.E)
+                
+                if (e - lastBigJump) >= earlystopping:
+                    break
+
+                if min_E is not None and s.E < min_E:
+                    if abs(len((self.V > 0.5)) - self.shape[0]) < 2:
+                        break
 
     def plot_results(self):
         self.ghn.plot_V()
@@ -141,11 +177,11 @@ class H_SymReg:
 
 
         #generate Q@V
-        QV_hist = [self.Q@v for v in self.V_hist]
+        QV_hist = [self.Q@v for v in self.GHN.V_hist]
 
         # Reshape grid datas
-        c_V_hist = [v.reshape(self.max_str_len, self.num_syms) for v in self.V_hist]
-        c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.u_hist]
+        c_V_hist = [v.reshape(self.max_str_len, self.num_syms) for v in self.GHN.V_hist]
+        c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.GHN.u_hist]
         c_L_hist = [l.reshape((self.max_str_len, self.num_syms)) for l in self.L_hist]
         c_QV_hist = [qv.reshape((self.max_str_len, self.num_syms)) for qv in QV_hist]
 

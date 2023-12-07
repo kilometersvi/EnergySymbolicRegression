@@ -75,8 +75,7 @@ class GHN:
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
         self.u = s.u
         self.V = s.V
-        print(f'q: {self.Q.shape}, V: {self.V.shape}, I: {self.I.shape}')
-        s.calc_E() #.E = GHN.calc_energy(self.Q, self.V, self.I)
+        s.calc_E() 
 
         self.u_hist.append(s.u)
         self.V_hist.append(s.V)
@@ -98,7 +97,7 @@ class GHN:
         return -1 * np.dot(self.V.T, self.I)[0][0]
     
     @flexmethod("Q", "V", "I")
-    def calc_energy(self):
+    def calc_energy(self) -> float:
         print(f"V.shape {self.V.shape}, Q.shape {self.Q.shape}, I.shape {self.I.shape}")
 
         return GHN.calc_energy_internal(self.Q, self.V) + GHN.calc_energy_external(self.V, self.I)
@@ -198,7 +197,7 @@ class GHN:
 
     @flexmethod('E_hist')
     def plot_Ehist(self, max_y=None):
-        #plt.set_xlim((1,len(self.L_hist)))
+        #plt.set_xlim((1,len(self.E_hist)))
         plt.plot(np.arange(1, len(self.E_hist)), self.E_hist[1:])
         if max_y is not None:
             plt.ylim((np.min(self.E_hist[1:])-5, min(np.max(self.E_hist[1:])+5,max_y)))#np.max(self.E_hist[1:])+5))
