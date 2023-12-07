@@ -218,6 +218,14 @@ class H_SymReg:
         fig.colorbar(im_QV, ax=axes[1, 0])
 
         def animate(i):
+
+
+            print(len(self.ghn.E_hist))
+            print(len(c_QV_hist))
+            print(self.ghn.E_hist)
+            print(self.ghn.E_hist[0])
+
+            
             s = self.decode_output(V=c_V_hist[i].reshape((self.nUnits,1)))
             y = self.evaluate(s)
             if y is None: y = "err"
@@ -228,10 +236,11 @@ class H_SymReg:
             im_u.set_array(c_u_hist[i])
             im_L.set_array(c_L_hist[i])
             im_QV.set_array(c_QV_hist[i])
+            print(i)
             
-            if i >= 2:
+            if i >= 3:
                 x_data = np.arange(1, i + 1)
-                y_data = self.E_hist[1: i + 2]
+                y_data = self.E_hist[1: i + 1]
 
                 # Check if data arrays are not empty and have the same length
                 if len(x_data) > 0 and len(y_data) > 0 and len(x_data) == len(y_data):
