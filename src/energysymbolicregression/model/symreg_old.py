@@ -7,7 +7,7 @@ from model.factories import QFactory, IFactory
 from model.optimizer import *
 from model.loss import *
 from model.onehotencode import OneHotEncoder
-from model.hopfield_utils import *
+from easytools.decorators import flexmethod
 
 
 
@@ -103,8 +103,8 @@ class H_SymReg:
         self.V_extremes = (V_min.reshape((self.max_str_len*self.num_syms, 1)),
                            V_max.reshape((self.max_str_len*self.num_syms, 1)))
         
-        max_E = calc_internal_energy(self.Q, self.V_extremes[1])[0][0]
-        min_E = calc_internal_energy(self.Q, self.V_extremes[0])[0][0]
+        max_E = H_SymReg.calc_energy_internal(self.Q, self.V_extremes[1])[0][0]
+        min_E = H_SymReg.calc_energy_internal(self.Q, self.V_extremes[0])[0][0]
 
         self.energy_domain = (min_E, max_E)
 
@@ -112,6 +112,17 @@ class H_SymReg:
 
         self.get_loss._set_max_diff(self.V_extremes[1])
 
+    @flexmethod("Q","V")
+    def calc_energy_internal(self) -> float:
+        return -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))[0][0]
+    
+    @flexmethod("V", "I")
+    def calc_energy_external(self) -> float:
+        return -1 * np.dot(self.V.T, self.I)[0][0]
+    
+    @flexmethod("Q", "V", "I")
+    def calc_energy(self):
+        return H_SymReg.calc_energy_internal(self.Q, self.V) + H_SymReg.calc_energy_external(self.V, self.I)
 
     @staticmethod
     def squasher(u, gain):
