@@ -229,7 +229,7 @@ class H_SymReg:
             im_L.set_array(c_L_hist[i])
             im_QV.set_array(c_QV_hist[i])
             
-            if i >= 1:
+            if i >= 2:
                 x_data = np.arange(1, i + 1)
                 y_data = self.E_hist[1: i + 1]
 
