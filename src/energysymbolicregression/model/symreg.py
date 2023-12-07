@@ -177,11 +177,11 @@ class H_SymReg:
 
 
         #generate Q@V
-        QV_hist = [self.Q@v for v in self.GHN.V_hist]
+        QV_hist = [self.Q@v for v in self.ghn.V_hist]
 
         # Reshape grid datas
-        c_V_hist = [v.reshape(self.max_str_len, self.num_syms) for v in self.GHN.V_hist]
-        c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.GHN.u_hist]
+        c_V_hist = [v.reshape(self.max_str_len, self.num_syms) for v in self.ghn.V_hist]
+        c_u_hist = [u.reshape(self.max_str_len, self.num_syms) for u in self.ghn.u_hist]
         c_L_hist = [l.reshape((self.max_str_len, self.num_syms)) for l in self.L_hist]
         c_QV_hist = [qv.reshape((self.max_str_len, self.num_syms)) for qv in QV_hist]
 
