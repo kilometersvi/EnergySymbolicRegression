@@ -76,7 +76,7 @@ class GHN:
 
     @flexmethod('Q', 'V')
     def calc_energy_internal(self) -> float:
-        return -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))[0][0]
+        return -0.5 * np.dot(self.V, np.dot(self.Q, self.V.T))[0][0]
     
     @flexmethod("V", "I")
     def calc_energy_external(self) -> float:
