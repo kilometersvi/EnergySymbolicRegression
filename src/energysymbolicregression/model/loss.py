@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union
-from model.hopfield_utils import get_diff_of_centers, find_extreme_eigenvectors, closest_binary_eigenvector
+from model.hopfield import Heigen
 
 CleanFunctCallable = Callable[[np.ndarray, str], str]
 
@@ -67,15 +67,15 @@ class EvalLoss:
     def _set_Q(self, Q):
         if np.mean(np.abs(Q - self.Q, casting="unsafe")) > 0.1:
             self.Q = Q
-            _, V_max = find_extreme_eigenvectors(Q)
-            #V_max_binary = closest_binary_eigenvector(V_max, self.max_str_len)
+            _, V_max = Heigen.find_extreme_eigenvectors(Q)
+            #V_max_binary = Heigen.closest_binary_eigenvector(V_max, self.max_str_len)
             self._set_max_diff(V_max.reshape((self.max_str_len*self.num_syms, 1)))
 
     def _set_max_diff(self, V_max):
             # Calculate u at equilibrium
             u_eq = np.dot(self.Q, V_max)
             
-            self.max_diff = get_diff_of_centers(u_eq)
+            self.max_diff = Heigen.get_diff_of_centers(u_eq)
 
     @staticmethod
     def scaled_log(x, d1=0, d2=1, r1=0, r2=1, c=1.4):
@@ -229,7 +229,7 @@ class EvalLoss:
         
 
         #use diff value of activated u vs inactive u to determine model convergence state (greater value = more converged = loss should be more influential)
-        diff = get_diff_of_centers(u)
+        diff = Heigen.get_diff_of_centers(u)
 
         # normalize between 0 and 1 using magic. 
         # This is essentially a measure of convergence. When 0, model is not converged, when 1, model is very converged

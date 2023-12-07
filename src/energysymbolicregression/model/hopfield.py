@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from typing import Callable, List, Tuple
 from typing import Callable, List, Dict, Union
-from hopfield_utils import *
-from easytools.decorators import untypedmethod
+from easytools.decorators import flexmethod, untypedmethod
 
 
 # Simple struct for easily passing current state
@@ -60,11 +59,12 @@ class GHN:
 
         return Hebbian_State(u, Q, V, I, du)
     
+    @flexmethod('Q','u','V','I','dt=0.01','gain=999')
     def forward(self):
         s = GHN.hebbian_learning(self.u, self.Q, self.V, self.I, self.dt, self.gain)
         self.u = s.u
         self.V = s.V
-        s.E = self.get_energy()
+        s.E = self.calc_energy(self.Q, self.V, self.I)
 
         self.u_hist.append(s.u)
         self.V_hist.append(s.V)
@@ -74,30 +74,30 @@ class GHN:
 
     #----- Energy Functions -----#
 
-    @untypedmethod('Q', 'V')
+    @flexmethod('Q', 'V')
     def calc_energy_internal(self) -> float:
         return -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))[0][0]
     
-    @untypedmethod("V", "I")
+    @flexmethod("V", "I")
     def calc_energy_external(self) -> float:
         return -1 * np.dot(self.V.T, self.I)[0][0]
     
-    @untypedmethod("Q", "V", "I")
+    @flexmethod("Q", "V", "I")
     def calc_energy(self):
         return GHN.calc_energy_internal(self.Q, self.V) + GHN.calc_energy_external(self.V, self.I)
 
 
     #----- System State -----#
 
-    @untypedmethod("Q")
-    def find_best_eigenvector_by_energy(self):
+    @untypedmethod(["Q"])
+    def find_best_eigenvector_by_energy(self, Q):
         """
         
         Get eigenvector correlating with lowest internal energy by searching all eigenvectors. 
         
         """
 
-        _, eigenvectors = np.linalg.eig(self.Q)
+        _, eigenvectors = np.linalg.eig(Q)
         min_e = np.inf
         min_i = -1
         for i in range(eigenvectors.shape[1]):
@@ -110,15 +110,15 @@ class GHN:
         v_min_e = eigenvectors[:,min_i].reshape((Q.shape[0], 1))
         return v_min_e
     
-    @untypedmethod("Q")
+    
+    @flexmethod("Q")
     def calc_min_E(self):
         v_min = GHN.find_best_eigenvector_by_energy(self.Q)
-        
 
 
     def _set_internal_energy_domain(self):
 
-        V_max, V_min = find_extreme_eigenvectors(self.Q)
+        V_max, V_min = Heigen.find_extreme_eigenvectors(self.Q)
 
         self.V_extremes = (V_min.reshape((self.shape[0]*self.shape[1], 1)),
                            V_max.reshape((self.shape[0]*self.shape[1], 1)))
@@ -134,7 +134,7 @@ class GHN:
 
     #----- Update -----#
 
-    @untyped{}
+    @flexmethod('Q', 'u', 'V', 'I')
     def update(self, n_iters=1000, min_dE=5, earlystopping=50, min_E=-130):
         """
         n_iters = epochs
@@ -167,16 +167,19 @@ class GHN:
 
     #----- Visualization -----#
 
+    @flexmethod('V')
     def plot_V(self):
         V_reshaped = self.V.reshape(self.shape[0], self.shape[1])
         plt.imshow(V_reshaped)
         plt.show()
-
+    
+    @flexmethod('u')
     def plot_u(self):
         u_reshaped = self.u.reshape(self.shape[0], self.shape[1])
         plt.imshow(u_reshaped)
         plt.show()
 
+    @flexmethod('E_hist')
     def plot_Ehist(self, max_y=None):
         #plt.set_xlim((1,len(self.L_hist)))
         plt.plot(np.arange(1, len(self.E_hist)), self.E_hist[1:])
@@ -185,6 +188,7 @@ class GHN:
 
         plt.show()
 
+    @flexmethod('Q','u_hist','V_hist','E_hist')
     def plot_histories_as_video(self):
 
         fig, axes = plt.subplots(2, 2, figsize=(10, 6))
@@ -244,3 +248,112 @@ class GHN:
         except Exception as e:
             print(f"error saving video: {e}")
         return HTML(v)
+
+
+class Heigen:
+
+    #----- Eigenmath for Hopfield Networks -----#
+
+    @staticmethod
+    def find_extreme_eigenvectors(Q):
+        """
+        
+        Get eigenvectors correlating with maximum and minimum eigenvalues of Q
+        Due to eigenvectors being continuous and 
+        
+        """
+
+        # Calculate eigenvalues and eigenvectors of Q
+        eigenvalues, eigenvectors = np.linalg.eig(Q)
+        
+        # Find the index of the maximum and minimum eigenvalues
+        max_eigenvalue_index = np.argmax(eigenvalues)
+        min_eigenvalue_index = np.argmin(eigenvalues)
+        
+        # Extract the corresponding eigenvectors
+        V_max = eigenvectors[:, max_eigenvalue_index]
+        V_min = eigenvectors[:, min_eigenvalue_index]
+        
+        # Normalize the eigenvectors (optional)
+        V_max = V_max / np.linalg.norm(V_max)
+        V_min = V_min / np.linalg.norm(V_min)
+        
+        return V_max, V_min
+
+    @staticmethod
+    def find_best_eigenvector_by_energy(Q):
+        """
+        
+        Get eigenvector correlating with lowest internal energy by searching all eigenvectors. 
+        
+        """
+
+        _, eigenvectors = np.linalg.eig(Q)
+        min_e = np.inf
+        min_i = -1
+        for i in range(eigenvectors.shape[1]):
+            v = eigenvectors[:,i].reshape((Q.shape[0], 1))
+            e = GHN.calc_internal_energy(Q, v)[0][0]
+            if e < min_e:
+                min_i = i
+                min_e = e
+
+        v_min_e = eigenvectors[:,min_i].reshape((Q.shape[0], 1))
+        return v_min_e
+
+
+    @staticmethod
+    def find_extreme_internal_energy(Q):
+        """
+        
+        Get energies of min and max eigenvalues
+        
+        """
+
+        # Calculate eigenvalues of Q
+        eigenvalues = np.linalg.eigvals(Q)
+        
+        # Find the maximum and minimum eigenvalues
+        max_eigenvalue = np.max(eigenvalues)
+        min_eigenvalue = np.min(eigenvalues)
+        
+        # Calculate the maximum and minimum internal energy
+        max_internal_energy = -0.5 * max_eigenvalue
+        min_internal_energy = -0.5 * min_eigenvalue
+        
+        return min_internal_energy, max_internal_energy
+
+
+    @staticmethod
+    def closest_binary_eigenvector(eigenvector, k):
+        """
+        Find the closest binary eigenvector to the given eigenvector.
+        
+        Parameters:
+            eigenvector (numpy.ndarray): The continuous eigenvector.
+            k (int): The number of components to set to 1.
+            
+        Returns:
+            numpy.ndarray: The closest binary eigenvector.
+        """
+        # Sort the indices of the eigenvector components in descending order
+        sorted_indices = np.argsort(-eigenvector)
+        
+        # Create a binary vector of the same length as the eigenvector
+        binary_vector = np.zeros_like(eigenvector)
+        
+        # Set the top k components to 1
+        binary_vector[sorted_indices[:k]] = 1
+        
+        return binary_vector
+
+    @staticmethod
+    def get_diff_of_centers(u):
+        """
+        
+        Get difference of both centers of u (activated and inactivated neurons)
+        
+        """
+        mean_activations_u = np.mean(u[u > 0.5]) if len(u[u > 0.5]) > 0 else 0
+        mean_nonactivations_u = np.mean(u[u < 0.5]) if len(u[u < 0.5]) > 0 else 0
+        return abs(mean_activations_u - mean_nonactivations_u)

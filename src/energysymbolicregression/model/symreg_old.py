@@ -1,20 +1,19 @@
-# Import necessary classes from Hopfield.py
-from hopfield import GHN, Heigen
 import numpy as np
-from model.onehotencode import OneHotEncoder
-from model.loss import EvalLoss, EvaluatorBase
+import matplotlib.pyplot as plt
+from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Union
+from matplotlib.animation import FuncAnimation
 from model.factories import QFactory, IFactory
 from model.optimizer import *
-from typing import List, Dict, Callable, Union
-from easytools.decorators import flexmethod
-from matplotlib.animation import FuncAnimation
-import matplotlib.pyplot as plt
+from model.loss import *
+from model.onehotencode import OneHotEncoder
+from model.hopfield_utils import *
+
 
 
 
 QFunctCallable = Callable[['QFactory', int, List[str]], None]
 IFunctCallable = Callable[['IFactory', int, List[str]], None]
-CleanFunctCallable = Callable[['np.ndarray', str], str]
 
 class H_SymReg:
     def __init__(self, chars: List[str], max_str_len: int = 10, gain: float = 999, dt: float = 0.01, min_energy_for_eval: float = -100, eval_clip: float = 400,
@@ -30,52 +29,94 @@ class H_SymReg:
         self.chars = chars
         self.max_str_len = max_str_len
         self.num_syms = len(chars)
-
-        # Initialize GHN instance
-        self.ghn = GHN(Q=None, u_shape=(self.max_str_len, self.num_syms), gain=gain, dt=dt)
-
+        self.nUnits = max_str_len * self.num_syms
+        self.gain = gain
+        self.dt = dt
+        self.u = (np.random.rand(self.nUnits, 1) - 0.5) * 0.01 + 0.5
+        self.V = self.squasher(self.u, self.gain)
         self.E_hist = [np.inf]
+        self.V_hist = [self.V]
+        self.u_hist = [self.u]
+        self.L_hist = [np.zeros_like(self.V)]
+
+        #I & Q
         self.conf = conf
         self.sets = sets
 
-        # Initialize I & Q factories
         self.ifactory = IFactory(self.max_str_len, self.chars, self.conf, self.sets)
-        self.Ifuncts = Ifuncts if Ifuncts else []
-        for ifunc in self.Ifuncts:
-            ifunc(self.ifactory, self.max_str_len, self.chars)
-        self.ghn.I = self.ifactory.I
+        if Ifuncts is None or len(Ifuncts) == 0:
+            self.Ifuncts = []
+        else:
+            self.Ifuncts = Ifuncts
+            for ifunc in self.Ifuncts:
+                ifunc(self.ifactory, self.max_str_len, self.chars)
+        self.I = self.ifactory.I
 
         self.qfactory = QFactory(self.max_str_len, self.chars, self.conf, self.sets)
-        self.Qfuncts = Qfuncts if Qfuncts else []
-        if not self.Qfuncts:
+        if Qfuncts is None or len(Qfuncts) == 0:
+            self.Qfuncts = []
             raise Warning("Qfuncts not defined- do you really want to train on empty connectivity matrix?")
-        for qfunc in self.Qfuncts:
-            qfunc(self.qfactory, self.max_str_len, self.chars)
-        self.ghn.Q = self.qfactory.Q
+        else:
+            self.Qfuncts = Qfuncts
+            for qfunc in self.Qfuncts:
+                qfunc(self.qfactory, self.max_str_len, self.chars)
+        self.Q = self.qfactory.Q
 
-        # Set losses, optimizer, and evaluator
-        self.evaluator = evaluator if evaluator else AttributeError("Evaluator is not set.")
-        self.clean_output = cleanfunct if cleanfunct else lambda s: s
-        self.get_loss = loss if loss else EvalLoss(self.evaluator, self.max_str_len, self.num_syms, eval_clip=eval_clip, min_E=min_energy_for_eval)
+
+        #losses & optimizer
+        if evaluator is None:
+            raise AttributeError("Evaluator is not set.")
+        self.evaluator = evaluator
+
+        if cleanfunct is None:
+            cleanfunct = lambda s: s
+        self.clean_output = cleanfunct
+
+        if loss is None:
+            self.get_loss = EvalLoss(self.evaluator, self.max_str_len, self.num_syms, eval_clip=eval_clip, min_E=min_energy_for_eval)
+        else:
+            self.get_loss = loss
         self.get_loss._set_tokenstring_preprocess_function(self.clean_output)
-        self.get_loss._set_Q(self.ghn.Q)
+        self.get_loss._set_Q(self.Q)
+
 
         self.optimizer = optimizer
-        if self.optimizer:
+        if optimizer is not None:
             self.optimizer.set_model(self)
 
         self._set_internal_energy_domain()
 
-    def _set_internal_energy_domain(self):
-        V_max, V_min = Heigen.find_extreme_eigenvectors(self.ghn.Q)
-        self.ghn.V_extremes = (V_min.reshape((self.max_str_len * self.num_syms, 1)), V_max.reshape((self.max_str_len * self.num_syms, 1)))
-        max_E = GHN.calc_energy_internal(self.ghn.Q, self.ghn.V_extremes[1])
-        min_E = GHN.calc_energy_internal(self.ghn.Q, self.ghn.V_extremes[0])
-        self.energy_domain = (min_E, max_E)
-        print(self.energy_domain)
-        self.get_loss._set_max_diff(self.ghn.V_extremes[1])
 
-    #@flexmethod.staticsig('Q','u','V','E',eq=None)
+    def _set_internal_energy_domain(self):
+
+        V_max, V_min = find_extreme_eigenvectors(self.Q)
+
+        # k = number of active neurons; in this implementation of hopfield, we already know what this is: the number of output positions
+        #k = self.max_str_len
+
+        #closest_possible_V_max = closest_binary_eigenvector(V_max, k)
+        #closest_possible_V_min = closest_binary_eigenvector(V_min, k)
+
+        #self.V_extremes = (closest_possible_V_min.reshape((self.max_str_len*self.num_syms, 1)), 
+        #                   closest_possible_V_max.reshape((self.max_str_len*self.num_syms, 1)))
+
+        self.V_extremes = (V_min.reshape((self.max_str_len*self.num_syms, 1)),
+                           V_max.reshape((self.max_str_len*self.num_syms, 1)))
+        
+        max_E = calc_internal_energy(self.Q, self.V_extremes[1])[0][0]
+        min_E = calc_internal_energy(self.Q, self.V_extremes[0])[0][0]
+
+        self.energy_domain = (min_E, max_E)
+
+        print(self.energy_domain)
+
+        self.get_loss._set_max_diff(self.V_extremes[1])
+
+
+    @staticmethod
+    def squasher(u, gain):
+        return 0.5 * (1 + np.tanh((u - 0.5) * gain))
+
     def get_evalloss(self, eq: str = None, Q: np.ndarray = None, u: np.ndarray = None, V: np.ndarray = None, E: float = None):
         if Q is None: Q = self.Q
         if u is None: u = self.u
@@ -84,6 +125,7 @@ class H_SymReg:
         if E is None: E = self.E_hist[-1]
 
         return self.get_loss.forward(eq, Q, u, V, E)
+
 
     def evaluate(self, eq: Union[str, np.ndarray]):
         if type(eq) == str:
@@ -99,17 +141,92 @@ class H_SymReg:
             return None
         else:
             return ys[0]
-        
+
+
     def update(self, I=None, n_iters=1000, min_dE=5, earlystopping=50, min_E=-130):
-        self.ghn.update(n_iters=n_iters, min_dE=min_dE, earlystopping=earlystopping, min_E=min_E)
+        """
+        I = bias
+        n_iters = epochs
+        min_dl = minimum change in L before noticing change in L
+        earlystopping = number of iters without change before quitting
+        min_L = minimum energy before quitting
+        """
+        if I is None:
+            I = self.I
+
+        min_found_E = np.inf
+        lastBigJump = 0
+
+
+        for e in range(n_iters):
+
+            global c_iter
+            c_iter = e
+
+            # evallosses
+            L = self.get_evalloss(eq = self.decode_output(V=self.V, clean=True))
+
+            if self.optimizer is not None:
+                L = self.optimizer.process(L, self. V)
+
+            self.L_hist.append(L)
+
+            du = -self.u + self.Q @ self.V + I + L
+            self.u += du * self.dt
+            self.V = self.squasher(self.u, self.gain)
+
+            # energy calc
+            e1 = -0.5 * np.dot(self.V.T, np.dot(self.Q, self.V))
+            e2 = np.dot(self.V.T, I+L)
+
+            print(f"internal energy: {e1}, external energy: {e2}, total energy: {e1 - e2}")
+            E = (-0.5 * np.dot(self.V.T, np.dot(self.Q, self.V)) - np.dot(self.V.T, I+L))[0][0]
+            #print(f"{i},{np.dot(self.V.T, new_I)}")
+
+            self.E_hist.append(E)
+            self.u_hist.append(self.u.copy())
+            self.V_hist.append(self.V)
+
+            if len(self.E_hist) > 1:
+                dE = self.E_hist[-1] - self.E_hist[-2]
+
+                if abs(dE) > min_dE:
+                    lastBigJump = e
+                min_found_E = min(min_found_E, E)
+
+
+                #print(f"{(np.abs(dL) <= min_dL)}, {(L < minL)}, {(i - lastBigJump) >= 100}")
+                #if ((np.abs(dL) <= min_dL) and (L < minL)) or ((i - lastBigJump) >= 100):
+                #    break
+
+                
+
+                if (e - lastBigJump) >= earlystopping:
+                    print("lastbigjumped")
+                    break
+                if min_E is not None and E < min_E:
+                    if abs(len((self.V > 0.5)) - self.max_str_len) < 2:
+                        break
+
+                if e%(n_iters//100)==0:
+                    print(f'{e}: {self.decode_output(self.V, clean=False)}')
+
 
     def plot_results(self):
-        self.ghn.plot_V()
+        V_reshaped = self.V.reshape(self.max_str_len, self.num_syms)
+        plt.imshow(V_reshaped)
+        plt.show()
+
 
     def plot_Ehist(self, max_y=None):
-        self.ghn.plot_Ehist(max_y)
+        #plt.set_xlim((1,len(self.L_hist)))
+        plt.plot(np.arange(1, len(self.E_hist)), self.E_hist[1:])
+        if max_y is not None:
+            plt.ylim((np.min(self.E_hist[1:])-5, min(np.max(self.E_hist[1:])+5,max_y)))#np.max(self.E_hist[1:])+5))
 
-    
+        plt.show()
+
+
     def plot_histories_as_video(self):
 
         fig, axes = plt.subplots(2, 3, figsize=(10, 6))
@@ -183,6 +300,7 @@ class H_SymReg:
         except Exception as e:
             print(f"error saving video: {e}")
         return HTML(v)
+
 
     def decode_output(self, V: np.ndarray = None, clean: bool = True):
         if V is None:
