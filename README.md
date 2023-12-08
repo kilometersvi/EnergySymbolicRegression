@@ -49,3 +49,6 @@ https://youtu.be/ZN9ygXVR9es?si=EKaEQP-YdozNyzUG
 
 Technical:
 https://youtu.be/fQ5_cFzkUm4?si=1E0cAzed02X6TjUF
+
+Presentation:
+https://docs.google.com/presentation/d/1bTF0vkGg6Gqe22dvT-G8K5KXc0e9I0C9VgxUPeJxMd4/edit?usp=sharing
