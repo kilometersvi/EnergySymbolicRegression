@@ -21,8 +21,8 @@ The original Hopfield update formula is given by:
 $$\frac{du_i}{dt} = -u_i + \sum^n_{j=0}V_j Q_{ij} + I_i $$
 
 In this equation:
-- $\frac{du}{dt}$ represents the change in activation over time.
-- $u_k$ is the current activation of neuron k.
+- $\frac{du}{dt}$ represents the change in activation over time (in our case, over this current epoch)
+- $u_i$ is the current activation of neuron k.
 - $V$ is the vector of current neuron activations.
 - $Q$ is the weight matrix representing the interactions between neurons.
 - $I$ is the bias term, traditionally a constant for all neurons.
@@ -31,17 +31,18 @@ Our modification involves replacing $I$ with a loss matrix, which we compute bas
 
 By treating the output loss as the bias for the current epoch of solution convergence, we can guide the network's dynamics towards producing more accurate and relevant solutions. 
 
-
 Learn more about hopfield networks: 
 - https://www.youtube.com/watch?v=HoWJzeAT9uc
 - https://arxiv.org/abs/2008.02217
-
 
 Todo:
 - Finish optimizer
 - Abstract above QFunctions for more generalizable programming language
 - Generalize the model for multidimensional problems (beyond just 2), and for extending beyond symbolic regression while maintaining the QFunctions language, losses, and optimizers
-- Solve $Q^n$ problem, allowing pairs of activations to influence other neurons 
+- Solve $Q^n$ problem, allowing pairs of activations to influence other neurons
+- Create automatic learner for Q function. Explore opportunities for understanding maximum adjustment for each weight class without disrupting model convergence (use minimum eigenvalue's eigenvector, or re-derive based on original Hopfield equation for maximum number of memories stored in Q matrix)
+- Create platform for benchmarking
+- After these are done, transition to Modern Hopfield Model over Graded Hopfield Model like current implementation. Not useful for symbolic regression, but will allow this model to serve as a machine learning layer after being refactored into PyTorch, allowing us to explore benefits of this layer for explainable machine learning.
 
 Overview:
 https://youtu.be/ZN9ygXVR9es?si=EKaEQP-YdozNyzUG
