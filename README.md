@@ -43,3 +43,8 @@ Todo:
 - Generalize the model for multidimensional problems (beyond just 2), and for extending beyond symbolic regression while maintaining the QFunctions language, losses, and optimizers
 - Solve $Q^n$ problem, allowing pairs of activations to influence other neurons 
 
+Overview:
+https://youtu.be/ZN9ygXVR9es?si=EKaEQP-YdozNyzUG
+
+Technical:
+https://youtu.be/fQ5_cFzkUm4?si=1E0cAzed02X6TjUF
