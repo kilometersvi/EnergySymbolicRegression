@@ -18,7 +18,7 @@ At the heart of our model is the classic Hopfield network update rule. However, 
 
 The original Hopfield update formula is given by:
 
-$$\frac{du}{dt} u_k = -u_k + V^T @ Q + I $$
+$$\frac{du_i}{dt} = -u_i + \sum^n_{j=0}V_j^T Q_{ij} + I_i $$
 
 In this equation:
 - $\frac{du}{dt}$ represents the change in activation over time.
