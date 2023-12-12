@@ -68,7 +68,7 @@ class GHN:
         u += du * dt
         V = GHN.squasher(u, gain)
 
-        return Hebbian_State(u, Q, V, I, du)
+        return Hebbian_State(u.copy(), Q, V, I, du)
     
     @flexmethod('Q','u','V','I',dt=0.01,gain=999)
     def forward(self):
@@ -79,7 +79,7 @@ class GHN:
             self.u = s.u 
             self.V = s.V
 
-            self.u_hist.append(s.u)
+            self.u_hist.append(s.u.copy())
             self.V_hist.append(s.V)
             self.E_hist.append(s.E)
 
@@ -135,6 +135,7 @@ class GHN:
     @flexmethod("Q")
     def calc_min_E(self):
         v_min = GHN.find_best_eigenvector_by_energy(self.Q)
+        return v_min
 
 
     def _set_internal_energy_domain(self):
