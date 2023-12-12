@@ -79,7 +79,7 @@ class GHN:
             self.u = s.u 
             self.V = s.V
 
-            self.u_hist.append(s.u.copy())
+            self.u_hist.append(s.u)
             self.V_hist.append(s.V)
             self.E_hist.append(s.E)
 
