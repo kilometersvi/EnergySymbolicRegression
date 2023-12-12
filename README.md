@@ -34,6 +34,7 @@ By treating the output loss as the bias for the current epoch of solution conver
 Learn more about hopfield networks: 
 - https://www.youtube.com/watch?v=HoWJzeAT9uc
 - https://arxiv.org/abs/2008.02217
+- http://www.scholarpedia.org/article/Hopfield_network
 
 Todo:
 - Finish optimizer
